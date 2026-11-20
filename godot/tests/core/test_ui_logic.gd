@@ -1,0 +1,61 @@
+extends RefCounted
+const SettingsCls = preload("res://src/adapters/view/ui/settings.gd")
+const L = preload("res://src/adapters/view/ui/hud_logic.gd")
+const Hud = preload("res://src/adapters/view/ui/hud.gd")
+const Synth = preload("res://src/adapters/view/audio/synth.gd")
+const Bus = preload("res://src/adapters/view/audio/audio_bus.gd")
+const Intro = preload("res://src/adapters/view/ui/intro_screen.gd")
+
+func run(t: TS) -> void:
+	# settings round-trip
+	var p := "user://test_settings_tmp.cfg"
+	var s = SettingsCls.new(p)
+	t.ok(not s.load_settings() or true, "load file thieu khong crash")
+	s.set_volume(0.35)
+	s.set_mouse_sensitivity(1.7)
+	t.eq(s.save_settings(), OK, "save ok")
+	var s2 = SettingsCls.new(p)
+	t.ok(s2.load_settings(), "load ok")
+	t.near(s2.volume, 0.35, "volume round-trip")
+	t.near(s2.mouse_sensitivity, 1.7, "sens round-trip")
+	s2.set_volume(5.0)
+	t.near(s2.volume, 1.0, "volume clamp")
+	DirAccess.remove_absolute(p)
+	# clock
+	t.eq(L.format_clock(125.0), "02:05", "clock 125")
+	t.eq(L.format_clock(0.0), "00:00", "clock 0")
+	t.eq(L.format_clock(29.2), "00:30", "clock ceil")
+	t.eq(L.format_clock(-3.0), "00:00", "clock neg")
+	t.ok(L.clock_urgent(30.0) and not L.clock_urgent(30.5), "urgent <=30")
+	# arrow
+	var sz := Vector2(1000, 600)
+	t.ok(not L.edge_arrow(Vector2(500, 300), sz, false)["visible"], "on-screen -> an")
+	var a: Dictionary = L.edge_arrow(Vector2(2000, 300), sz, false)
+	t.ok(a["visible"], "off-screen phai -> hien")
+	t.near(a["angle"], 0.0, "goc phai = 0")
+	t.near(a["pos"].x, 960.0, "ria phai", 0.01)
+	var b: Dictionary = L.edge_arrow(Vector2(500, 300), sz, true)
+	t.ok(b["visible"], "sau camera -> hien")
+	t.near(L.screen_angle(Vector2.ZERO, Vector2(0, 1)), PI / 2.0, "screen_angle xuong")
+	t.eq(L.prompt_text(4, 10), "E — Nạp ánh sáng (4/10)", "prompt")
+	# hud keys
+	var h = Hud.new()
+	h.update_values({"score": 99, "bogus": 1, "near_lantern": true, "carried": 3})
+	t.eq(h.values["score"], 99, "hud nhan key")
+	t.ok(not h.values.has("bogus"), "hud bo key la")
+	t.eq(h.values["flames"], 3, "key thieu giu nguyen")
+	t.eq(h._motes_box.get_child_count(), 10, "10 o dom dom")
+	t.eq(h._prompt.text, "E — Nạp ánh sáng (3/10)", "prompt hien")
+	h.free()
+	# intro + audio
+	t.eq(Intro.island_name(1), "Đảo Bến", "dao 1")
+	t.eq(Intro.island_name(3), "Đảo Chuông", "dao 3")
+	for n in Synth.SFX_NAMES:
+		var smp := Synth.sfx(n)
+		t.ok(smp.size() > 500 and Synth.peak(smp) > 0.05 and Synth.peak(smp) <= 1.0, "sfx " + n)
+	var bus = Bus.new()
+	bus.enabled = false
+	bus.play_sfx("pickup")
+	bus.play_music()
+	t.eq(bus.get_child_count(), 0, "audio no-op khi tat")
+	bus.free()

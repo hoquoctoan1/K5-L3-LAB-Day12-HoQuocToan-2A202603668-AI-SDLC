@@ -1,10 +1,14 @@
 extends SceneTree
 ## GODOT --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- <args>
-## Args: --seed N --ticks N --out FILE [--night 1] [--scenario F] [--inputs F] [--snapshot-every N=10]
-## Exit: 0 ok; 1 tham so/loi chung; 2 file scenario/inputs hong.
+## Args: --seed N --ticks N --out FILE [--night 1|2|3] [--scenario F] [--inputs F] [--snapshot-every N=10]
+## Exit: 0 ok; 1 tham so/loi chung (ke ca --night ngoai 1..3); 2 file scenario/inputs hong.
+## v1.1: snapshot mo rong (contract_codec), scenario v1.1 (scenario_loader), FrameInput v2 (dash,pause).
+## Snapshot `tick` va `sim_tick` deu doc tu state (tick tang ca khi paused, sim_tick (=steps) dung yen).
+## Event `night_start{night}` do Sim phat o step dau (runner KHONG gia lap).
 ##
 ## Giao dien Sim (viet boi agent khac, runner chi dua vao day):
-##   res://src/core/sim.gd : `Sim.new(seed:int)`; `.state: SimState`;
+##   res://src/core/sim.gd : `Sim.new(seed:int, night:int = 1)`; neu _init chi co 1 tham so,
+##   runner goi `Sim.new(seed)` roi gan `sim.state.night = night` (fallback); `.state: SimState`;
 ##   `.step(frame:Dictionary) -> Array` cac event {name,data}; Sim tu tang state.tick/steps.
 ##   Neu thieu sim.gd: dung StubSim (khong gameplay, chi dem tick).
 ## InputDecoder (res://src/core/input_decoder.gd): instance `.parse(data)->{ok,error}`, `.next(tick)->Dictionary`.
@@ -25,7 +29,7 @@ class StubSim extends RefCounted:
 		return []
 
 static func default_frame() -> Dictionary:
-	return {"move": Vector2.ZERO, "cam_yaw_deg": 0.0, "jump": false, "interact": false, "pulse": false}
+	return {"move": Vector2.ZERO, "cam_yaw_deg": 0.0, "jump": false, "interact": false, "pulse": false, "dash": false, "pause": false}
 
 ## Tra {ok,error,opts}. opts: seed,night,scenario,inputs,ticks,out,snapshot_every
 static func parse_args(args: PackedStringArray) -> Dictionary:
@@ -59,6 +63,8 @@ static func parse_args(args: PackedStringArray) -> Dictionary:
 	for r in ["seed", "ticks", "out"]:
 		if not seen.has(r):
 			return {"ok": false, "error": "thieu tham so bat buoc --" + r, "opts": opts}
+	if opts["night"] < 1 or opts["night"] > 3:
+		return {"ok": false, "error": "--night phai la 1, 2 hoac 3", "opts": opts}
 	if opts["ticks"] < 0:
 		return {"ok": false, "error": "--ticks phai >= 0", "opts": opts}
 	if opts["snapshot_every"] < 1:
@@ -96,6 +102,31 @@ static func _read_json(path: String) -> Dictionary:
 		return {"ok": false, "error": "JSON khong hop le (can object): " + path}
 	return {"ok": true, "data": data}
 
+## Tao Sim; ho tro Sim co hoac khong co tham so night.
+static func make_sim(seed: int, night: int):
+	if not ResourceLoader.exists("res://src/core/sim.gd"):
+		var stub := StubSim.new(seed)
+		stub.state.night = night
+		return stub
+	var script = load("res://src/core/sim.gd")
+	if script == null or not script.can_instantiate():
+		return null
+	var argc := 1
+	for m in script.get_script_method_list():
+		if m["name"] == "_init":
+			argc = m["args"].size()
+	var sim
+	if argc >= 2:
+		sim = script.new(seed, night)
+	else:
+		sim = script.new(seed)
+	if sim == null or not sim.has_method("step") or sim.get("state") == null:
+		return null
+	if sim.state.night != night:
+		sim.state.night = night
+		sim.state.time_left_initial = GameConfig.night_duration_s(night)
+	return sim
+
 func _fail(code: int, msg: String) -> void:
 	printerr(msg)
 	quit(code)
@@ -106,11 +137,10 @@ func _init() -> void:
 		_fail(1, "loi: " + pr["error"])
 		return
 	var o: Dictionary = pr["opts"]
-	var sim
-	if ResourceLoader.exists("res://src/core/sim.gd"):
-		sim = load("res://src/core/sim.gd").new(o["seed"])
-	else:
-		sim = StubSim.new(o["seed"])
+	var sim = make_sim(o["seed"], o["night"])
+	if sim == null:
+		_fail(1, "loi: khong nap duoc res://src/core/sim.gd (loi bien dich)")
+		return
 	if o["scenario"] != "":
 		var r := _read_json(o["scenario"])
 		if not r["ok"]:

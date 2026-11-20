@@ -8,7 +8,7 @@ static func idle() -> Dictionary:
 	return {"move": Vector2.ZERO, "cam_yaw_deg": 0.0, "jump": false, "interact": false, "pulse": false}
 
 func _hand() -> Dictionary:
-	return {"player": {"pos": [0, 0, 0], "carried": 5, "flames": 3},
+	return {"player": {"pos": [0, 0, 0], "carried": GameConfig.LANTERN_COST, "flames": 3},
 		"random_motes": false, "random_shades": false, "motes": [], "shades": [],
 		"lanterns": [{"id": "L1", "pos": [0, 0, 1], "deposited": 0}]}
 
@@ -48,7 +48,7 @@ func run(t: TS) -> void:
 		names.append(e["name"])
 		t.eq(e["tick"], 1, "event tick")
 	t.eq(names, ["deposit", "lantern_lit"], "events")
-	t.eq(ev[0]["data"], {"lantern_id": "L1", "amount": 5, "deposited": 5}, "deposit data")
+	t.eq(ev[0]["data"], {"lantern_id": "L1", "amount": GameConfig.LANTERN_COST, "deposited": GameConfig.LANTERN_COST}, "deposit data")
 	t.eq(h.state.player["carried"], 0, "carried 0")
 	t.ok(h.state.lanterns[0]["lit"], "L1 lit")
 	t.eq(h.state.status, "playing", "van playing")

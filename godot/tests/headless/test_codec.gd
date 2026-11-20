@@ -36,12 +36,14 @@ func run(t: TS) -> void:
 	s.shades.append({"id": "S1", "pos": Vector3(30.1, 1.0, 2.0), "state": "chase", "stun_left": 0.0})
 	s.motes.append({"id": "m1", "pos": Vector3(1, 0, 2)})
 	var line := Codec.snapshot_line(s)
-	var want := '{"type":"snapshot","tick":0,"sim_tick":0,"state":"playing","time_left_s":300.0,"score":0,"player":{"pos":[0.0,0.0,12.0],"flames":3,"carried":0},"lanterns":[{"id":"L1","pos":[0.0,0.0,5.0],"lit":false,"deposited":0},{"id":"L2","pos":[0.0,0.0,10.0],"lit":false,"deposited":0},{"id":"L3","pos":[0.0,0.0,15.0],"lit":false,"deposited":0},{"id":"L4","pos":[0.0,0.0,20.0],"lit":false,"deposited":0},{"id":"L5","pos":[0.0,0.0,25.0],"lit":false,"deposited":0}],"shades":[{"id":"S1","pos":[30.1,1.0,2.0],"state":"chase"}],"motes_active":1,"motes":[{"id":"m1","pos":[1.0,0.0,2.0]}]}'
+	var want := '{"type":"snapshot","tick":0,"sim_tick":0,"state":"playing","time_left_s":300.0,"score":0,"night":1,"wind":{"active":false,"dir_deg":0.0},"player":{"pos":[0.0,0.0,12.0],"vel":[0.0,0.0,0.0],"grounded":true,"invuln":0.0,"dash_cd_s":0.0,"pulse_cd_s":0.0,"charm_s":0.0,"flames":3,"carried":0},"lanterns":[{"id":"L1","pos":[0.0,0.0,5.0],"lit":false,"deposited":0},{"id":"L2","pos":[0.0,0.0,10.0],"lit":false,"deposited":0},{"id":"L3","pos":[0.0,0.0,15.0],"lit":false,"deposited":0},{"id":"L4","pos":[0.0,0.0,20.0],"lit":false,"deposited":0},{"id":"L5","pos":[0.0,0.0,25.0],"lit":false,"deposited":0}],"shades":[{"id":"S1","pos":[30.1,1.0,2.0],"state":"chase"}],"motes_active":1,"motes":[{"id":"m1","pos":[1.0,0.0,2.0],"kind":"random","ttl_s":-1.0}],"drifters":[],"charms":[]}'
 	t.eq(line, want, "snapshot byte-exact + key order")
 	t.ok(JSON.parse_string(line) != null, "snapshot la JSON hop le")
 	t.eq(Codec.event_line(131, {"name": "pulse", "data": {"stunned_ids": ["S1"]}}),
 		'{"type":"event","tick":131,"name":"pulse","data":{"stunned_ids":["S1"]}}', "event line")
 	t.eq(Codec.end_line(4800, "won", 1730), '{"type":"end","ticks":4800,"state":"won","score":1730}', "end line")
+
+	_v11(t)
 
 	# scenario
 	var st := _state()
@@ -118,3 +120,105 @@ func run(t: TS) -> void:
 	t.eq(e["ticks"], 5, "dung khi won")
 	t.eq(e["state"], "won", "end state won")
 	t.eq(lw.size(), 1 + 5 + 1, "khong snapshot sau khi dung")
+
+func _v11(t: TS) -> void:
+	var s := _state()
+	s.night = 2
+	s.tick = 100
+	s.steps = 60
+	s.paused = true
+	s.wind = {"active": true, "dir_deg": 123.45678}
+	s.player["vel"] = Vector3(1.0, -0.0, 2.0)
+	s.player["grounded"] = false
+	s.player["invuln_ticks"] = 90
+	s.player["dash_cd_ticks"] = 30
+	s.player["pulse_cd_ticks"] = 1
+	s.player["charm_ticks"] = 600
+	s.motes.append(SimState.make_mote("m1", Vector3(1, 0, 2), "dropped", 120))
+	s.drifters.append(SimState.make_drifter("D1", Vector3(1, 0, 2), "flee"))
+	s.drifters[0]["stolen"] = 3
+	s.charms.append(SimState.make_charm("C1", Vector3(0, 0, 0)))
+	s.charms[0]["available"] = false
+	s.charms[0]["respawn_ticks"] = 90
+	var line := Codec.snapshot_line(s)
+	var d = JSON.parse_string(line)
+	t.ok(d != null, "snapshot v1.1 la JSON")
+	t.eq(d["state"], "paused", "paused -> state paused")
+	t.eq(int(d["tick"]), 100, "tick tiep tuc khi paused")
+	t.eq(int(d["sim_tick"]), 60, "sim_tick dung yen")
+	t.eq(int(d["night"]), 2, "night")
+	t.eq(d["wind"]["active"], true, "wind active")
+	t.near(d["wind"]["dir_deg"], 123.457, "wind dir lam tron")
+	t.ok(line.find('"vel":[1.0,0.0,2.0]') >= 0, "vel, -0 chuan hoa")
+	t.eq(d["player"]["grounded"], false, "grounded")
+	t.near(d["player"]["invuln"], 1.5, "invuln 90 tick = 1.5 s")
+	t.near(d["player"]["dash_cd_s"], 0.5, "dash_cd_s")
+	t.ok(line.find('"pulse_cd_s":0.017') >= 0, "pulse_cd_s 3 chu so")
+	t.near(d["player"]["charm_s"], 10.0, "charm_s")
+	t.eq(d["motes"][0]["kind"], "dropped", "mote kind")
+	t.near(d["motes"][0]["ttl_s"], 2.0, "mote ttl_s")
+	t.eq(d["drifters"][0]["state"], "flee", "drifter state")
+	t.eq(int(d["drifters"][0]["stolen"]), 3, "drifter stolen")
+	t.eq(d["charms"][0]["available"], false, "charm available")
+	t.near(d["charms"][0]["respawn_s"], 1.5, "charm respawn_s")
+	var keys: Array = []
+	for k in ["type", "tick", "sim_tick", "state", "time_left_s", "score", "night", "wind", "player", "lanterns", "shades", "motes_active", "motes", "drifters", "charms"]:
+		keys.append(line.find('"%s":' % k))
+	var sorted_keys := keys.duplicate()
+	sorted_keys.sort()
+	t.eq(keys, sorted_keys, "thu tu key goc co dinh")
+	s.status = "lost"
+	t.eq(JSON.parse_string(Codec.snapshot_line(s))["state"], "lost", "lost thang paused")
+	t.eq(Codec.event_line(5, {"name": "dash", "data": {}}), '{"type":"event","tick":5,"name":"dash","data":{}}', "event dash")
+	t.eq(Codec.event_line(5, {"name": "night_start", "data": {"night": 3}}), '{"type":"event","tick":5,"name":"night_start","data":{"night":3}}', "event night_start")
+	t.eq(Codec.event_line(7, {"name": "player_hit", "data": {"by": "fall", "flames": 2, "dropped": 0, "lost": 4}}),
+		'{"type":"event","tick":7,"name":"player_hit","data":{"by":"fall","flames":2,"dropped":0,"lost":4}}', "player_hit fall lost")
+	# scenario v1.1
+	var st := _state()
+	var sc := {
+		"player": {"invuln_ticks": 10, "dash_cd_ticks": 20, "pulse_cd_ticks": 30, "charm_ticks": 40},
+		"shades": [{"pos": [1, 0, 1], "state": "stunned", "state_ticks_left": 50}],
+		"drifters": [{"pos": [2, 0, 2], "state": "chase", "stolen": 2}, {"id": "D5", "pos": [3, 0, 3]}],
+		"charms": [{"pos": [4, 0, 4], "available": false, "respawn_ticks": 70}],
+		"random_drifters": false, "wind_enabled": false, "random_shades": false}
+	var r := Loader.apply(st, sc)
+	t.ok(r["ok"], "scenario v1.1 hop le: " + str(r["error"]))
+	t.eq(st.player["invuln_ticks"], 10, "invuln_ticks")
+	t.eq(st.player["dash_cd_ticks"], 20, "dash_cd_ticks")
+	t.eq(st.player["pulse_cd_ticks"], 30, "pulse_cd_ticks")
+	t.eq(st.player["charm_ticks"], 40, "charm_ticks")
+	t.eq(st.shades[0]["state"], "stunned", "shade state")
+	t.eq(st.shades[0]["state_ticks_left"], 50, "state_ticks_left")
+	t.eq(st.drifters.size(), 2, "drifters thay the")
+	t.eq(st.drifters[0]["id"], "D1", "drifter id auto")
+	t.eq(st.drifters[0]["stolen"], 2, "stolen")
+	t.eq(st.drifters[1]["id"], "D5", "drifter id tuong minh")
+	t.eq(st.drifters[1]["state"], "idle", "drifter state mac dinh")
+	t.eq(st.charms[0]["id"], "C1", "charm id")
+	t.eq(st.charms[0]["available"], false, "charm available")
+	t.eq(st.charms[0]["respawn_ticks"], 70, "charm respawn_ticks")
+	t.eq(st.random_drifters, false, "random_drifters")
+	t.eq(st.wind_enabled, false, "wind_enabled")
+	t.eq(st.score, 0, "scenario v1.1 khong cong diem")
+	t.eq(st.tick, 0, "scenario v1.1 khong tang tick")
+	var bad := [
+		{"player": {"invuln_ticks": -1}}, {"player": {"dash_cd_ticks": "a"}}, {"player": {"pulse_cd_ticks": 1.5}},
+		{"player": {"charm_ticks": -3}}, {"shades": [{"pos": [0, 0, 0], "state": "flying"}]},
+		{"shades": [{"pos": [0, 0, 0], "state_ticks_left": -1}]}, {"drifters": "x"}, {"drifters": [{"id": "D1"}]},
+		{"drifters": [{"pos": [0, 0, 0], "state": "bogus"}]}, {"drifters": [{"pos": [0, 0, 0], "stolen": -1}]},
+		{"charms": [{"pos": [0, 0]}]}, {"charms": [{"pos": [0, 0, 0], "available": 1}]},
+		{"charms": [{"pos": [0, 0, 0], "respawn_ticks": -1}]}, {"random_drifters": 1}, {"wind_enabled": "x"}]
+	for b in bad:
+		var s2 := _state()
+		var rb := Loader.apply(s2, b)
+		t.ok(not rb["ok"] and rb["error"] != "", "scenario v1.1 sai: " + str(b))
+		t.eq(s2.drifters.size(), 0, "state khong bi sua khi loi (v1.1)")
+	for sn in ["spawning", "wander", "chase", "recoil", "stunned"]:
+		t.ok(Loader.apply(_state(), {"shades": [{"pos": [0, 0, 0], "state": sn}]})["ok"], "shade state " + sn)
+	for n in [1, 2, 3]:
+		t.ok(Runner.parse_args(PackedStringArray(["--seed", "1", "--ticks", "1", "--out", "o", "--night", str(n)]))["ok"], "night %d" % n)
+	for n in ["0", "4", "-1", "x"]:
+		t.ok(not Runner.parse_args(PackedStringArray(["--seed", "1", "--ticks", "1", "--out", "o", "--night", n]))["ok"], "night sai " + n)
+	t.eq(Runner.parse_args(PackedStringArray(["--seed", "1", "--ticks", "1", "--out", "o"]))["opts"]["night"], 1, "night mac dinh 1")
+	var fd := Runner.default_frame()
+	t.ok(fd.has("dash") and fd.has("pause"), "default frame co dash, pause")

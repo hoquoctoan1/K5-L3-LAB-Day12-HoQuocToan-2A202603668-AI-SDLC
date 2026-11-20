@@ -44,6 +44,19 @@ static func enc(v) -> String:
 			return "{" + ",".join(parts2) + "}"
 	return JSON.stringify(str(v))
 
+static func _secs(ticks) -> String:
+	return fmt_num(float(int(ticks)) / 60.0)
+
+## Giay tu truong tick; neu Sim cu (Phase 1) chi co truong LEGACY tinh bang giay thi dung no.
+static func _ptk(p: Dictionary, key: String, legacy_s: String) -> String:
+	if p.has(key) and int(p[key]) > 0:
+		return _secs(p[key])
+	if p.has(legacy_s) and float(p[legacy_s]) > 0.0:
+		return fmt_num(float(p[legacy_s]))
+	return "0.0"
+
+## Snapshot v1.1 (thu tu key theo interfaces_v2.md muc 6, [ASSUMPTION] ve thu tu).
+## state = "paused" khi s.paused va status playing. ttl_s cua mote ttl_ticks<0 = -1.0.
 static func snapshot_line(s: SimState) -> String:
 	var p: Dictionary = s.player
 	var ls: PackedStringArray = []
@@ -55,13 +68,30 @@ static func snapshot_line(s: SimState) -> String:
 		sh.append('{"id":%s,"pos":%s,"state":%s}' % [enc(d["id"]), vec(d["pos"]), enc(d["state"])])
 	var mo: PackedStringArray = []
 	for m in s.motes:
-		mo.append('{"id":%s,"pos":%s}' % [enc(m["id"]), vec(m["pos"])])
-	var head: String = '{"type":"snapshot","tick":%d,"sim_tick":%d,"state":%s,"time_left_s":%s,"score":%d,' % [
-		s.tick, s.steps, enc(s.status), fmt_num(s.time_left_s()), s.score]
-	var pl: String = '"player":{"pos":%s,"flames":%d,"carried":%d},' % [
-		vec(p["pos"]), int(p["flames"]), int(p["carried"])]
-	var tail: String = '"lanterns":[%s],"shades":[%s],"motes_active":%d,"motes":[%s]}' % [
-		",".join(ls), ",".join(sh), s.motes.size(), ",".join(mo)]
+		var ttl: int = int(m.get("ttl_ticks", -1))
+		mo.append('{"id":%s,"pos":%s,"kind":%s,"ttl_s":%s}' % [
+			enc(m["id"]), vec(m["pos"]), enc(m.get("kind", "random")),
+			("-1.0" if ttl < 0 else _secs(ttl))])
+	var dr: PackedStringArray = []
+	for d in s.drifters:
+		dr.append('{"id":%s,"pos":%s,"state":%s,"stolen":%d}' % [
+			enc(d["id"]), vec(d["pos"]), enc(d.get("state", "idle")), int(d.get("stolen", 0))])
+	var ch: PackedStringArray = []
+	for c in s.charms:
+		ch.append('{"id":%s,"available":%s,"respawn_s":%s}' % [
+			enc(c["id"]), enc(bool(c.get("available", true))), _secs(c.get("respawn_ticks", 0))])
+	var st_name: String = "paused" if (s.paused and s.status == "playing") else s.status
+	var w: Dictionary = s.wind
+	var head: String = '{"type":"snapshot","tick":%d,"sim_tick":%d,"state":%s,"time_left_s":%s,"score":%d,"night":%d,"wind":{"active":%s,"dir_deg":%s},' % [
+		s.tick, s.steps, enc(st_name), fmt_num(s.time_left_s()), s.score, s.night,
+		enc(bool(w.get("active", false))), fmt_num(float(w.get("dir_deg", 0.0)))]
+	var pl: String = '"player":{"pos":%s,"vel":%s,"grounded":%s,"invuln":%s,"dash_cd_s":%s,"pulse_cd_s":%s,"charm_s":%s,"flames":%d,"carried":%d},' % [
+		vec(p["pos"]), vec(p.get("vel", Vector3.ZERO)), enc(bool(p.get("grounded", true))),
+		_ptk(p, "invuln_ticks", "invuln_left"), _secs(p.get("dash_cd_ticks", 0)),
+		_ptk(p, "pulse_cd_ticks", "pulse_cd_left"), _secs(p.get("charm_ticks", 0)),
+		int(p["flames"]), int(p["carried"])]
+	var tail: String = '"lanterns":[%s],"shades":[%s],"motes_active":%d,"motes":[%s],"drifters":[%s],"charms":[%s]}' % [
+		",".join(ls), ",".join(sh), s.motes.size(), ",".join(mo), ",".join(dr), ",".join(ch)]
 	return head + pl + tail
 
 ## ev = {"name":String,"data":Dictionary}

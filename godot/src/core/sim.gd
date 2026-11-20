@@ -26,9 +26,10 @@ func reset(seed: int = -1) -> void:
 	if seed >= 0:
 		seed_value = seed
 	state = SimState.new()
-	state.rng = Rng.new(seed_value)
+	state.seed_streams(seed_value)
 	state.player = SimState.make_default_player()
-	state.time_left_initial = GameConfig.NIGHT1_DURATION_S
+	state.wind = SimState.make_default_wind()
+	state.time_left_initial = GameConfig.night_duration_s(state.night)
 	begun = false
 	var r := state.random_motes
 	var s := state.random_shades

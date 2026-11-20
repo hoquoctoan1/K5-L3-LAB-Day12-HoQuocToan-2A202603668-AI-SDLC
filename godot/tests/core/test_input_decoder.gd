@@ -69,3 +69,20 @@ func run(t: TS) -> void:
 	t.ok(not ID.parse([])["ok"], "root khong phai object")
 	t.ok(ID.parse({"frames": []})["ok"], "frames rong hop le")
 	t.ok(ID.parse({"frames": [{"tick": 0, "move": [0, 1]}, {"tick": 120, "interact": true}]})["ok"], "vi du hop le")
+
+	# v2: dash, pause canh len
+	d = _dec([{"tick": 1, "dash": true}, {"tick": 3, "dash": false}, {"tick": 4, "dash": true, "pause": true}, {"tick": 6, "pause": false}, {"tick": 7, "pause": true}])
+	var fd: Array = []
+	var fp: Array = []
+	for k in range(9):
+		var f: Dictionary = d.next(k)
+		t.ok(f.has("dash") and f.has("pause"), "frame v2 co dash/pause")
+		if f["dash"]:
+			fd.append(k)
+		if f["pause"]:
+			fp.append(k)
+	t.eq(fd, [1, 4], "dash canh len")
+	t.eq(fp, [4, 7], "pause canh len")
+	t.ok(not ID.parse({"frames": [{"tick": 0, "dash": 1}]})["ok"], "dash sai kieu")
+	t.ok(not ID.parse({"frames": [{"tick": 0, "pause": "x"}]})["ok"], "pause sai kieu")
+	t.ok(ID.parse({"frames": [{"tick": 0, "dash": true, "pause": false}]})["ok"], "dash/pause hop le")

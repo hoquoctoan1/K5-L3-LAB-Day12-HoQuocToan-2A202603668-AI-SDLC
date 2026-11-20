@@ -27,11 +27,11 @@ func run(t: TS) -> void:
 	t.ok("\n".join(PackedStringArray(l1)) != "\n".join(PackedStringArray(l3)), "seed khac => khac")
 
 	# hand scenario
-	var sc := {"player": {"pos": [0, 0, 0], "carried": 5}, "random_motes": false, "random_shades": false,
+	var sc := {"player": {"pos": [0, 0, 0], "carried": GameConfig.LANTERN_COST}, "random_motes": false, "random_shades": false,
 		"lanterns": [{"id": "L1", "pos": [0, 0, 1], "deposited": 0}]}
 	var h := _run(1, sc, {"frames": [{"tick": 0, "interact": true}]}, 3, 1)
 	var txt := "\n".join(PackedStringArray(h))
-	t.ok(txt.contains('{"type":"event","tick":1,"name":"deposit","data":{"lantern_id":"L1","amount":5,"deposited":5}}'), "deposit tick1")
+	t.ok(txt.contains('{"type":"event","tick":1,"name":"deposit","data":{"lantern_id":"L1","amount":%d,"deposited":%d}}' % [GameConfig.LANTERN_COST, GameConfig.LANTERN_COST]), "deposit tick1")
 	t.ok(txt.contains('"tick":1,"name":"lantern_lit"'), "lit tick1")
 
 	# dawn: time_left_s 1 -> end ticks 60 lost, event tick 60

@@ -1,33 +1,48 @@
 class_name PulseSystem
 extends RefCounted
-## Xung (pulse): tieu carried, lam choang va day lui shade trong ban kinh.
-## Quyet dinh: moi shade trong ban kinh deu duoc tinh (ke ca shade dang stunned,
-## stun duoc khoi dong lai) va cong SCORE_PER_STUN.
+## Toa Sang (buoc 7). Contract v1.1:
+##  - can input.pulse (canh len), carried >= PULSE_COST, pulse_cd_ticks == 0, khong paused; neu khong: khong lam gi.
+##  - tru PULSE_COST, dat pulse_cd_ticks = PULSE_COOLDOWN_TICKS.
+##  - tam = chan May + (0, PULSE_CENTER_Y, 0); muc tieu chot tai tick nay: khoang cach 3D tu tam toi pos Bong Muc <= PULSE_RADIUS.
+##  - moi muc tieu: state "stunned", state_ticks_left = PULSE_STUN_TICKS (lam moi neu dang choang),
+##    knock_dir (XZ, ra xa tam; trung vi tri -> +X), knock_ticks_left = PULSE_KNOCK_TICKS.
+##    Viec DI CHUYEN day lui (PULSE_PUSH_M / PULSE_KNOCK_TICKS moi tick, dung khi gap vat can) do shade_system lam o buoc 8.
+##  - +SCORE_PER_STUN moi con moi lan (ke ca dang choang). Khong giet.
+##  - event pulse{stunned_ids} luon phat (co the rong).
+## Gio Lac (drifter): drifter_system tu doc state.extras["pulse_tick"] (== state.tick khi pulse xay ra tick nay, else -1)
+##  va state.extras["pulse_center"] (Vector3) roi tu xu ly; khong cong diem.
+
+const _Shade = preload("res://src/core/systems/shade_system.gd")
 
 static func step(state: SimState, input: Dictionary, events: Array) -> void:
-	if state.status != "playing":
+	if state.status != "playing" or state.paused:
 		return
+	state.extras["pulse_tick"] = -1
 	if not input.get("pulse", false):
 		return
 	var p: Dictionary = state.player
-	if int(p["carried"]) < GameConfig.PULSE_COST or float(p["pulse_cd_left"]) > 0.0:
+	if int(p["carried"]) < GameConfig.PULSE_COST or int(p["pulse_cd_ticks"]) > 0:
 		return
 	p["carried"] = int(p["carried"]) - GameConfig.PULSE_COST
-	p["pulse_cd_left"] = GameConfig.PULSE_COOLDOWN_S
+	p["pulse_cd_ticks"] = GameConfig.PULSE_COOLDOWN_TICKS
 	var ppos: Vector3 = p["pos"]
+	var center := ppos + Vector3(0.0, GameConfig.PULSE_CENTER_Y, 0.0)
+	state.extras["pulse_center"] = center
+	state.extras["pulse_tick"] = state.tick
+	# chot muc tieu truoc khi sua bat ky con nao
 	var ids: Array = []
-	for s in state.shades:
+	for i in _Shade.order(state.shades):
+		var s: Dictionary = state.shades[i]
 		var spos: Vector3 = s["pos"]
-		var d := Vector2(spos.x - ppos.x, spos.z - ppos.z)
-		if d.length() > GameConfig.PULSE_RADIUS:
+		if spos.distance_to(center) > GameConfig.PULSE_RADIUS + 1e-4:
 			continue
-		var dir := Vector2(1.0, 0.0) if d.length() < 0.000001 else d.normalized()
-		var np := Vector2(spos.x, spos.z) + dir * GameConfig.PULSE_PUSH_M
-		if np.length() > GameConfig.ISLAND_RADIUS:
-			np = np.normalized() * GameConfig.ISLAND_RADIUS
-		s["pos"] = Vector3(np.x, spos.y, np.y)
+		var d := Vector2(spos.x - center.x, spos.z - center.z)
+		var dir := Vector2(1.0, 0.0) if d.length() < 1e-6 else d.normalized()
 		s["state"] = "stunned"
-		s["stun_left"] = GameConfig.PULSE_STUN_S
+		s["state_ticks_left"] = GameConfig.PULSE_STUN_TICKS
+		s["knock_dir"] = dir
+		s["knock_ticks_left"] = GameConfig.PULSE_KNOCK_TICKS
+		s["_fresh"] = true   # shade_system khong tru tick choang trong tick nay
 		state.score += GameConfig.SCORE_PER_STUN
 		ids.append(s["id"])
 	events.append({"name": "pulse", "data": {"stunned_ids": ids}})
