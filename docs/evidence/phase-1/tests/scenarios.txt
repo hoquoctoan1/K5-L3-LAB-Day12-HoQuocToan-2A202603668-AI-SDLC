@@ -1,0 +1,21 @@
+commit=2e460fd date=2026-11-20T17:06:08+07:00
+PASS s01_idle
+PASS s02_pick_mote
+PASS s03_full_no_pickup
+PASS s04_deposit_partial
+PASS s05_deposit_lights
+PASS s06_pulse_stun
+PASS s07_pulse_no_carry
+PASS s08_shade_hit_invuln
+PASS s09_loss_no_flames
+PASS s10_win_all_lit
+PASS s11_loss_dawn_t60
+PASS s12_no_entities_yaw90
+PASS s13_diagonal
+PASS s14_ticks_zero
+PASS s15_dawn_ticks59
+PASS s16_nofl_beats_dawn
+PASS s17_win_beats_dawn
+PASS s18_bad_inputs
+passed=18 failed=0
+exit=0
