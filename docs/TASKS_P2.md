@@ -44,4 +44,6 @@ Mỗi file một owner; chỉ sửa file trong cột "Sở hữu". Không chạy
 | ID | Trạng thái |
 |---|---|
 | A0-P2 | DONE (khung dong bang: game_config, sim_state, interfaces_v2.md; test 470 checks 0 failures, 18/18 kich ban) |
-| Wave 1 | TODO |
+| Wave 1 | DONE |
+| Wave 2 (C1, C2, D1) | DONE (test lõi 3055/0; p2 39/39; p1 18/18) |
+| Phase 2 push | commit + tag phase-2 theo yêu cầu Product Owner |

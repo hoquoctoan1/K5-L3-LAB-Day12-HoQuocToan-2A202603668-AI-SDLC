@@ -1,0 +1,14 @@
+base_commit=54d04fb date=2026-11-20T17:53:00+07:00
+
+== timing: --ticks 18000 (no-scenario, seed 42)
+--- combo long_s42 (seed=42 ticks=18000)
++ C:\Users\Admin\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 18000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/long_s42.a.jsonl
+  exit=0 wall=5.68s bytes=1584851
++ C:\Users\Admin\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 18000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/long_s42.b.jsonl
+  exit=0 wall=5.43s bytes=1584851
+  end line: {"type":"end","ticks":6287,"state":"lost","score":0}
+  note: game ket thuc som: 6287/18000 tick (state trong end line)
+PASS long_s42: 2 lan byte-giong nhau (sha256 a25a9f15f5fd2b0b...)
+
+RESULT: PASS (7/7 to hop)
+exit=0

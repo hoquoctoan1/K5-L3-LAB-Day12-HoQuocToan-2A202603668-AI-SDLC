@@ -31,3 +31,12 @@ Giu nguyen: s01, s04, s11-s15, s18.
 
 ## Sua code ngoai game_config/sim_state (toi thieu)
 `sim.gd` (`seed_streams`, wind mac dinh, thoi gian theo `night_duration_s`), `spawn_system.gd` (dung `make_mote/make_shade`, tran `MOTE_CAP`).
+
+## P2-C1 (Sim 12 buoc, lifecycle v2)
+| File | Thay doi | Ly do |
+|---|---|---|
+| core/test_sim.gd | Viet lai: `Sim.new(seed, night)`; danh sach event bo `night_start` khi so sanh (event moi v1.1 o step dau); them 3 Dem, pause, thu tu 12 buoc, spawn tick sau, tat dinh/reset moi Dem, dawn Dem 2 = 19800 | contract v1.1 |
+| core/test_sim.gd | Khong co test Phase 1 nao phu thuoc kep dao (R3): kiem lai, khong can sua | R3 |
+| core/test_lifecycle_system.gd | `state.steps` = so tick DA xong (Sim tang `steps` o buoc 2, truoc system; Phase 1 tang sau). `time_left_after` -> `ticks_left`. Thu tu: no_flames > all_lit > dawn (Phase 1: won > no_flames) => test "thang va thua cung tick" doi thanh no_flames. All-lit = MOI den (Phase 1 dung `LANTERN_COUNT_NIGHT1`, sai o Dem 2/3) | ticket win_lose |
+| headless/test_e2e.gd | `night_start` la dong event dau; them chay runner 3 Dem 3000 tick, pause qua file inputs, roi dao, bục nhảy Dem 2, Dem 3 21600 tick <= 30 s | contract v1.1 |
+| tests/scenarios (KHONG sua, owner khac) | 16/18 FAIL chi vi `night_start` tick 1; loc dong do thi deu PASS | requests R10 |

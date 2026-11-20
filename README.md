@@ -4,7 +4,7 @@ Video demo: (se bo sung o Phase 4)
 
 Game 3D góc nhìn thứ ba làm bằng Godot 4.7 (GDScript). Bạn là người giữ đèn nhỏ tuổi trên một hòn đảo giữa sương đen. Gom đom đóm, mang về thắp đủ 5 Đèn Lồng Lớn trước khi trời sáng, và né hoặc làm choáng Bóng Mực đang đuổi theo. Thua khi hết máu (flames) hoặc hết đêm (dawn).
 
-Trạng thái: **Phase 1, đang thực hiện.** Các mục chưa xác minh được ghi trong "Giới hạn đã biết".
+Trạng thái: **Phase 2 (ba hòn đảo, contract v1.1).** Phase 1 đã có tag `phase-1`. Các mục chưa xác minh được ghi trong "Giới hạn đã biết".
 
 ## Cài đặt và chạy
 
@@ -31,7 +31,9 @@ Lưu ý GPU: project dùng renderer `gl_compatibility` (OpenGL). Trên máy Inte
 | `E` | Nạp đom đóm đang mang vào Đèn Lồng gần nhất trong bán kính tương tác |
 | `F` | Tỏa sáng (pulse): tốn đom đóm, làm choáng và đẩy lùi Bóng Mực trong bán kính |
 | Chuột, `Q`, `R` | Xoay camera |
-| `Enter` | Chơi lại (Replay) từ màn kết quả |
+| `Shift` | Lướt (dash) |
+| `Esc` / `P` | Tạm dừng |
+| `Enter` | Xác nhận / chơi lại từ màn kết quả |
 
 Đom đóm được nhặt tự động khi đi đủ gần (bán kính 1.2 m), không cần phím.
 
@@ -121,3 +123,13 @@ Dockerfile chưa được build hay chạy thử. Máy phát triển không có 
 - Chưa có tag `phase-1`, Release `v1.0.0`, hay video demo.
 - Hiệu ứng "Sáng tạo của tôi" chưa có ảnh so sánh trước/sau.
 - Diễn giải Test Contract nằm trong `docs/notes/test-contract-mapping.md`. Chưa đối chiếu lại toàn bộ với `contract/TEST_CONTRACT_v1.0.md` trong README này.
+
+## Phase 2 — ba hòn đảo (tóm tắt)
+
+- Ba Đêm: Đảo Bến (5 đèn), Đảo Cau (hai đảo nối cầu tre, hai bục nhảy, Gió Lạc, Bùa Gió, 6 đèn), Đảo Chuông (3 tầng, dốc, bục nhảy, tháp chuông, gió mạnh, 7 đèn). Menu → giới thiệu Đêm → chơi → kết quả → Đêm kế → màn Bình Minh. Âm thanh tổng hợp bằng code.
+- Headless: `--night 1|2|3`; snapshot/scenario/event theo contract v1.1 (tên trường là **giả định** từ bản tóm tắt ticket, vì file contract v1.1 không có trong repo).
+- Chạy kiểm tra: `sh scripts/run_scenarios_p2.sh` (39 bộ), `sh scripts/run_scenarios.sh` (18 bộ Phase 1), `bash scripts/verify_determinism.sh`.
+- Kết quả lần chạy gần nhất (Windows, Godot 4.7.2): test lõi `checks=3055 failures=0`; kịch bản Phase 2 `passed=39 failed=0`; Phase 1 `passed=18 failed=0`; tất định 7/7; Đêm 3 đủ 21600 tick chạy khoảng 21,7 giây (mục tiêu ≤ 30 giây) và hai lần chạy giống hệt. Log ở `docs/evidence/phase-2/`.
+- Điểm đom đóm cộng **khi nhặt** (giữ như Phase 1). Góc bản đồ dùng `z = r·sin(a)` theo tọa độ ticket.
+- Chưa xác minh: chơi bằng phím/chuột thật, nghe âm thanh, hiệu ứng gió/Gió Lạc/bùa/lướt trên màn hình, CI GitHub, Docker, macOS/Linux. FPS trung bình đo khoảng 57 ở 1280×720 trên Intel UHD 620 (có thể bị vsync giới hạn).
+- Điểm xuất phát Đêm 3 là (0,0,0), trùng đĩa tầng 2 và tháp chuông (xem `docs/notes/requests.md` R11).

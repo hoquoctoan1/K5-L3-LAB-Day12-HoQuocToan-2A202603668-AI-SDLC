@@ -152,6 +152,7 @@ static func apply(state: SimState, d) -> Dictionary:
 			state.drifters.append(dd)
 	if d.has("charms"):
 		state.charms = []
+		state.extras["charms_init"] = true  # mang scenario thay the mac dinh, ke ca mang rong
 		for x in d["charms"]:
 			var cid: String
 			if x.has("id"):

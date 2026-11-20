@@ -5,7 +5,9 @@ import json, sys
 name, path = sys.argv[1], sys.argv[2]
 rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
 snaps = {r["tick"]: r for r in rows if r["type"] == "snapshot"}
-evs = [r for r in rows if r["type"] == "event"]
+# v1.1: Sim phat them event night_start{night} o tick 1 (khong thuoc luat Phase 1 dang kiem) -> bo qua o day;
+# no duoc kiem rieng o tests/scenarios/p2 va test_sim.
+evs = [r for r in rows if r["type"] == "event" and r["name"] != "night_start"]
 end = rows[-1]
 errs = []
 

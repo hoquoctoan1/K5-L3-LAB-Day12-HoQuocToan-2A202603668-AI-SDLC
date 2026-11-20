@@ -28,3 +28,16 @@ Mọi số tuning là **provisional** (D3). Chỉ khai báo ở `godot/src/core/
 | A20 | Mô phỏng chuyển động | Core tự mô phỏng di chuyển, trọng lực và nhảy ở 60 Hz (D2). Nhảy một lần cho đến khi chạm đất. Đảo bán kính 45 m. Scene chỉ hiển thị. | D2, Q4; `player_system.gd` |
 | A21 | Tuning | Toàn bộ là giá trị tạm (provisional), chờ Product Owner duyệt (Q5). | D3; `game_config.gd` |
 | A22 | Đầu ra headless khi kết thúc | Khi status là `won` hoặc `lost`, runner dừng sớm và vẫn ghi dòng `end` cuối. | `headless_runner.gd` |
+
+## Phase 2 (bổ sung)
+| Mục mơ hồ | Quyết định |
+|---|---|
+| Test Contract v1.1 gốc không có trong repo | Tên trường snapshot/scenario/event suy từ bản tóm tắt ticket (`interfaces_v2.md`) |
+| Điểm đom đóm | Cộng khi nhặt (khớp ví dụ contract v1.0 và Product Owner xác nhận); ticket ghi `per_mote_delivered` |
+| Chiều của góc | Dùng `x = cx + r·cos a`, `z = cz + r·sin a` vì khớp tọa độ ticket (dù mô tả là ngược chiều kim đồng hồ) |
+| `fall_enabled` | true ở v1.1 (rơi khỏi đảo bị phạt) |
+| Bóng Mực Đêm 2/3 | 2 con ở tick 300 rồi theo interval từng đêm; max_alive tính chung; khoảng cách ≥ 15 m áp dụng mọi đêm; wander 0,5× tốc độ; `spawning` 30 tick |
+| Pulse trúng Gió Lạc | Không cộng điểm |
+| `night_start` | Sim phát ở bước đầu mọi đêm (kể cả Đêm 1); kịch bản Phase 1 bỏ qua event này |
+| Tạm dừng | `tick` tăng, `sim_tick`/thời gian/hồi chiêu/spawn đứng yên; nhấn pause khi đang dừng thì tiếp tục |
+| `ttl_s` đom đóm ngẫu nhiên | -1 |

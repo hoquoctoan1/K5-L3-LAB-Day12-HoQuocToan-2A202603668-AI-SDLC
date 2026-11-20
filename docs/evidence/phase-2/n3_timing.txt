@@ -1,0 +1,3 @@
+real	0m21.738s
+night3 21600 ticks byte-identical
+{"type":"end","ticks":21600,"state":"lost","score":0}

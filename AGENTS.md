@@ -27,3 +27,8 @@
 - Giao thức headless: `scripts/headless.sh --seed N --night 1 [--scenario F] [--inputs F] --ticks N --out F`. Test: `GODOT --headless --path godot --script res://tests/run_core_tests.gd`; kịch bản: `scripts/run_scenarios.sh`; tất định: `scripts/verify_determinism.sh`.
 - Không chạy `--import`/`--editor` trên máy dev (treo); core tham chiếu file mới bằng `preload`, không dựa `class_name`.
 - Chọn model subagent theo độ khó (haiku/sonnet/opus) để tiết kiệm token.
+
+## Phase 2
+- Nguồn luật: `docs/notes/ticket-02.json` (TICKET-02) và `docs/TASKS_P2.md`; số chuẩn ở `godot/src/core/game_config.gd`, khung ở `godot/src/core/interfaces_v2.md`, bản đồ ở `godot/src/core/maps/MAPS.md`.
+- Tick 12 bước nằm ở `godot/src/core/sim.gd`; mỗi system một file ở `godot/src/core/systems/`; quyết định mơ hồ ở `docs/assumptions.md` và `docs/notes/requests.md`.
+- Kiểm chứng: test lõi, `scripts/run_scenarios.sh`, `scripts/run_scenarios_p2.sh`, `scripts/verify_determinism.sh`. Không nói "pass" nếu chưa chạy thật.
