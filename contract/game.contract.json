@@ -1,0 +1,35 @@
+{
+  "contract_version": "1.0",
+  "team": "mssv-ho-ten",
+  "build_cmd": "TODO: lenh build chay duoc tren macOS/Linux",
+  "run_cmd": "TODO: lenh chay game co giao dien",
+  "headless_cmd": "TODO: lenh headless khong bao gom cac tham so --seed/--ticks/--out",
+  "tuning": {
+    "player_speed": null,
+    "carry_capacity": null,
+    "lantern_cost": null,
+    "lantern_count_night1": 5,
+    "pickup_radius": null,
+    "interact_radius": null,
+    "pulse_cost": null,
+    "pulse_radius": null,
+    "night1_duration_s": null,
+    "flames": null,
+    "invuln_s": null,
+    "hit_drop_ratio": null,
+    "pulse_stun_s": null,
+    "pulse_push_m": null,
+    "pulse_cooldown_s": null,
+    "safe_radius": null,
+    "shade_speed": null,
+    "shade_hit_radius": null,
+    "fall_enabled": false,
+    "score": {
+      "per_mote": null,
+      "per_lantern": null,
+      "per_stun": null,
+      "per_second_left": null,
+      "per_flame_left": null
+    }
+  }
+}

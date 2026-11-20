@@ -1,0 +1,45 @@
+name: Verify
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.2-stable
+      GODOT_SHA512: 9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned Godot headless binary
+        run: |
+          set -euo pipefail
+          url="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          zip_path="$RUNNER_TEMP/godot.zip"
+          install_dir="$RUNNER_TEMP/godot-bin"
+          curl -fsSL --retry 3 -o "$zip_path" "$url"
+          echo "${GODOT_SHA512}  $zip_path" | sha512sum -c -
+          mkdir -p "$install_dir"
+          unzip -q "$zip_path" -d "$install_dir"
+          godot_bin="$install_dir/Godot_v${GODOT_VERSION}_linux.x86_64"
+          chmod +x "$godot_bin"
+          echo "GODOT=$godot_bin" >> "$GITHUB_ENV"
+      - name: Build class cache (import)
+        run: timeout 300 "$GODOT" --headless --path godot --import
+      - name: Core tests
+        run: timeout 600 "$GODOT" --headless --path godot --script res://tests/run_core_tests.gd
+      - name: Scenarios
+        if: hashFiles('scripts/run_scenarios.sh') != ''
+        run: timeout 600 bash scripts/run_scenarios.sh
+      - name: Determinism
+        if: hashFiles('scripts/verify_determinism.sh') != ''
+        run: timeout 600 bash scripts/verify_determinism.sh

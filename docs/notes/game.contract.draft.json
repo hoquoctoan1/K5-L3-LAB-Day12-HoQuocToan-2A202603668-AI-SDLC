@@ -1,0 +1,253 @@
+{
+  "contract_name": "Dao Den Long - Phase 1",
+  "document_version": "0.1.0",
+  "status": "draft_prd_derived",
+  "source": {
+    "document": "PRD.md",
+    "version": "1.0 - Draft",
+    "official_test_contract_v1_available": false,
+    "notice": "This draft records requirements and proposed gameplay values from the PRD. It is not a replacement for the official Test Contract v1.0. Update the headless interface and any conflicting rules when that contract is provided."
+  },
+  "game": {
+    "name": "Đảo Đèn Lồng",
+    "phase": 1,
+    "level": "Đêm 1 - Đảo Bến",
+    "mode": "single_player",
+    "required_lantern_count": 5,
+    "required_platforms": ["macOS", "Linux"],
+    "development_platform": "Windows is permitted"
+  },
+  "requirements": {
+    "level": {
+      "must_be_3d": true,
+      "must_have_collidable_ground": true,
+      "player_must_not_pass_through_terrain": true,
+      "all_required_lanterns_must_be_reachable": true,
+      "must_have_collectible_fireflies": true,
+      "must_have_ink_shadow_enemy": true,
+      "must_have_minimum_environment_light_for_navigation": true
+    },
+    "player": {
+      "name": "Mây",
+      "movement": ["forward", "backward", "left", "right"],
+      "jump": true,
+      "gravity": true,
+      "must_not_jump_again_before_landing": true,
+      "camera": "third_person_follow"
+    },
+    "controls": {
+      "forward": "W",
+      "backward": "S",
+      "left": "A",
+      "right": "D",
+      "jump": "Space",
+      "interact": "E",
+      "glow": "F",
+      "camera": "Mouse",
+      "source": "proposed_controls_in_prd; implementation may change them"
+    },
+    "game_states": [
+      "initializing",
+      "playing",
+      "won",
+      "lost",
+      "restarting"
+    ],
+    "lanterns": {
+      "count": 5,
+      "states": ["unlit", "lit"],
+      "each_lantern_can_be_lit_only_once": true,
+      "requires_sufficient_light": true,
+      "lit_lanterns_are_safe_zones_for_enemy": true
+    },
+    "fireflies": {
+      "are_visible_3d_entities": true,
+      "have_visual_glow": true,
+      "collected_by_player_contact": true,
+      "cannot_be_collected_twice_before_respawn": true,
+      "must_remain_available_over_time_to_allow_completion": true
+    },
+    "enemy": {
+      "name": "Bóng Mực",
+      "required_behaviors": ["wander", "chase", "repelled", "avoid_light"],
+      "must_detect_and_chase_player": true,
+      "must_damage_player_on_valid_contact": true,
+      "must_not_damage_player_every_frame": true,
+      "must_react_to_glow_skill": true,
+      "must_avoid_lit_lantern_safe_zones": true
+    },
+    "end_conditions": {
+      "win": "All 5 lanterns are lit and the player is alive.",
+      "loss": "Player health reaches 0 before completing the lantern objective.",
+      "only_one_terminal_state_per_game": true,
+      "simultaneous_win_and_loss_precedence": "pending_official_test_contract"
+    },
+    "replay": {
+      "enabled_after_win_or_loss": true,
+      "resets_health": true,
+      "resets_light_to_initial_value": true,
+      "resets_score": true,
+      "resets_all_lanterns_to_unlit": true,
+      "resets_player_position": true,
+      "reinitializes_enemy_and_fireflies": true,
+      "returns_game_to_playing": true
+    },
+    "hud": [
+      "health",
+      "light",
+      "lantern_progress",
+      "score",
+      "interaction_hint_near_unlit_lantern",
+      "glow_skill_status"
+    ]
+  },
+  "proposed_gameplay_values": {
+    "status": "proposed_by_prd; subject to the official Test Contract v1.0",
+    "health": {
+      "initial": 3,
+      "maximum": 3,
+      "minimum": 0,
+      "damage_per_valid_enemy_contact": 1,
+      "invulnerability_after_damage_seconds": 1
+    },
+    "light": {
+      "initial": 0,
+      "maximum": 10,
+      "per_firefly": 1,
+      "lantern_cost": 3,
+      "glow_skill_cost": 2
+    },
+    "glow_skill": {
+      "effect_duration_seconds": 2,
+      "cooldown_seconds": 3
+    },
+    "score": {
+      "per_firefly": 10,
+      "per_lantern_lit": 100,
+      "per_remaining_health_on_win": 50,
+      "remaining_health_bonus_awarded_once": true,
+      "minimum": 0
+    }
+  },
+  "acceptance_tests": [
+    {
+      "id": "TC-01",
+      "name": "Initialize level",
+      "pass_criteria": "A new game starts with the player on the island and in the playing state."
+    },
+    {
+      "id": "TC-02",
+      "name": "Move player",
+      "pass_criteria": "W, A, S, and D move the player in their corresponding directions."
+    },
+    {
+      "id": "TC-03",
+      "name": "Jump and land",
+      "pass_criteria": "The player can jump while grounded, is affected by gravity, and cannot jump again before landing."
+    },
+    {
+      "id": "TC-04",
+      "name": "Collect firefly",
+      "pass_criteria": "Contact collects a visible firefly once, increases light by the proposed amount, and awards the proposed score."
+    },
+    {
+      "id": "TC-05",
+      "name": "Respect light maximum",
+      "pass_criteria": "Collecting fireflies at the light maximum never increases light above that maximum."
+    },
+    {
+      "id": "TC-06",
+      "name": "Light lantern without enough light",
+      "pass_criteria": "The lantern remains unlit and no light is consumed."
+    },
+    {
+      "id": "TC-07",
+      "name": "Light lantern with enough light",
+      "pass_criteria": "The lantern changes from unlit to lit once, the proposed light cost is deducted, progress increases by one, and the proposed score is awarded."
+    },
+    {
+      "id": "TC-08",
+      "name": "Do not pay twice for a lit lantern",
+      "pass_criteria": "Interacting with a lit lantern does not consume light or award duplicate score."
+    },
+    {
+      "id": "TC-09",
+      "name": "Enemy contact damage",
+      "pass_criteria": "A valid enemy contact reduces health by the proposed damage amount; repeated contact during the invulnerability interval does not repeatedly damage the player."
+    },
+    {
+      "id": "TC-10",
+      "name": "Use glow skill successfully",
+      "pass_criteria": "With sufficient light and no active cooldown, the skill consumes its proposed cost once and repels nearby enemies."
+    },
+    {
+      "id": "TC-11",
+      "name": "Reject unavailable glow skill",
+      "pass_criteria": "Insufficient light or an active cooldown prevents activation and does not consume light."
+    },
+    {
+      "id": "TC-12",
+      "name": "Enemy avoids lit lantern",
+      "pass_criteria": "The enemy avoids the safe area of a lit lantern."
+    },
+    {
+      "id": "TC-13",
+      "name": "Win after lighting all lanterns",
+      "pass_criteria": "Lighting the fifth lantern while health is above zero changes the game state to won and stops active gameplay."
+    },
+    {
+      "id": "TC-14",
+      "name": "Lose when health reaches zero",
+      "pass_criteria": "Health reaching zero before completing the objective changes the game state to lost and stops active gameplay."
+    },
+    {
+      "id": "TC-15",
+      "name": "Replay after terminal state",
+      "pass_criteria": "Replay resets health, light, score, lanterns, player position, enemy, and fireflies, then returns to playing."
+    },
+    {
+      "id": "TC-16",
+      "name": "Score without duplicate rewards",
+      "pass_criteria": "Firefly and lantern rewards are applied once per valid event; the remaining-health bonus is awarded once on victory only."
+    },
+    {
+      "id": "TC-17",
+      "name": "Run on supported platform",
+      "pass_criteria": "The game starts and is playable on macOS or Linux."
+    },
+    {
+      "id": "TC-18",
+      "name": "Headless contract compliance",
+      "pass_criteria": "Once the official Test Contract v1.0 is available, all of its required headless scenarios, data formats, and results pass."
+    }
+  ],
+  "headless": {
+    "required": true,
+    "deterministic": true,
+    "gameplay_logic_independent_of_rendering": true,
+    "creative_visual_or_audio_features_must_not_change_test_results": true,
+    "official_interface_status": "not_specified_in_prd",
+    "command": null,
+    "input_schema": null,
+    "output_schema": null,
+    "exit_code_rules": null,
+    "pending_from_official_test_contract": [
+      "Exact game.contract.json schema",
+      "Required headless command and arguments",
+      "Input format and schema",
+      "Output format and schema",
+      "Exit codes and error behavior",
+      "Any gameplay rules that override proposed PRD values",
+      "Deterministic rule for simultaneous win and loss"
+    ]
+  },
+  "delivery": {
+    "required_files": [
+      "README.md",
+      "game.contract.json"
+    ],
+    "requires_real_test_evidence": true,
+    "requires_public_repository": true,
+    "required_git_tag": "phase-1"
+  }
+}

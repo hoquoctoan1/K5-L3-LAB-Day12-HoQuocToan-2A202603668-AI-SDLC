@@ -1,0 +1,72 @@
+== verify_determinism.sh
+date: 2026-11-20T16:57:45+07:00
+repo: /c/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC
+godot: C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe
+godot --version: 4.7.2.stable.official.ed1daf0bf
+
+--- combo noscen_s1 (seed=1 ticks=3000)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 1 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/noscen_s1.a.jsonl
+  exit=0 wall=0.56s bytes=159072
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 1 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/noscen_s1.b.jsonl
+  exit=0 wall=0.55s bytes=159072
+  end line: {"type":"end","ticks":856,"state":"lost","score":0}
+  note: game ket thuc som: 856/3000 tick (state trong end line)
+PASS noscen_s1: 2 lan byte-giong nhau (sha256 118e0a47b5314875...)
+--- combo scen_s1 (seed=1 ticks=3000 scenario=contract/scenario_example.json inputs=contract/inputs_example.json)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 1 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/scen_s1.a.jsonl --scenario C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/scenario_example.json --inputs C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/inputs_example.json
+  exit=0 wall=0.47s bytes=26286
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 1 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/scen_s1.b.jsonl --scenario C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/scenario_example.json --inputs C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/inputs_example.json
+  exit=0 wall=0.59s bytes=26286
+  end line: {"type":"end","ticks":446,"state":"lost","score":10}
+  note: game ket thuc som: 446/3000 tick (state trong end line)
+PASS scen_s1: 2 lan byte-giong nhau (sha256 af7a1086f7b3bf3b...)
+--- combo noscen_s42 (seed=42 ticks=3000)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/noscen_s42.a.jsonl
+  exit=0 wall=0.56s bytes=158791
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/noscen_s42.b.jsonl
+  exit=0 wall=0.57s bytes=158791
+  end line: {"type":"end","ticks":858,"state":"lost","score":0}
+  note: game ket thuc som: 858/3000 tick (state trong end line)
+PASS noscen_s42: 2 lan byte-giong nhau (sha256 5f1e5053e97124a4...)
+--- combo scen_s42 (seed=42 ticks=3000 scenario=contract/scenario_example.json inputs=contract/inputs_example.json)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/scen_s42.a.jsonl --scenario C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/scenario_example.json --inputs C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/inputs_example.json
+  exit=0 wall=0.47s bytes=26286
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/scen_s42.b.jsonl --scenario C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/scenario_example.json --inputs C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/inputs_example.json
+  exit=0 wall=0.48s bytes=26286
+  end line: {"type":"end","ticks":446,"state":"lost","score":10}
+  note: game ket thuc som: 446/3000 tick (state trong end line)
+PASS scen_s42: 2 lan byte-giong nhau (sha256 af7a1086f7b3bf3b...)
+--- combo noscen_s12345 (seed=12345 ticks=3000)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 12345 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/noscen_s12345.a.jsonl
+  exit=0 wall=0.59s bytes=160774
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 12345 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/noscen_s12345.b.jsonl
+  exit=0 wall=0.55s bytes=160774
+  end line: {"type":"end","ticks":868,"state":"lost","score":0}
+  note: game ket thuc som: 868/3000 tick (state trong end line)
+PASS noscen_s12345: 2 lan byte-giong nhau (sha256 392498d9c1073bcb...)
+--- combo scen_s12345 (seed=12345 ticks=3000 scenario=contract/scenario_example.json inputs=contract/inputs_example.json)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 12345 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/scen_s12345.a.jsonl --scenario C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/scenario_example.json --inputs C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/inputs_example.json
+  exit=0 wall=0.47s bytes=26286
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 12345 --night 1 --ticks 3000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/scen_s12345.b.jsonl --scenario C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/scenario_example.json --inputs C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/contract/inputs_example.json
+  exit=0 wall=0.46s bytes=26286
+  end line: {"type":"end","ticks":446,"state":"lost","score":10}
+  note: game ket thuc som: 446/3000 tick (state trong end line)
+PASS scen_s12345: 2 lan byte-giong nhau (sha256 af7a1086f7b3bf3b...)
+
+== info: seed khac nhau (no-scenario, ticks=3000)
+INFO seed 1 vs 42: khac nhau
+INFO seed 1 vs 12345: khac nhau
+INFO seed 42 vs 12345: khac nhau
+
+== timing: --ticks 18000 (no-scenario, seed 42)
+--- combo long_s42 (seed=42 ticks=18000)
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 18000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/long_s42.a.jsonl
+  exit=0 wall=0.46s bytes=158791
++ C:/Users/Admin/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://src/adapters/headless/headless_runner.gd -- --seed 42 --night 1 --ticks 18000 --out C:/Users/Admin/Desktop/lab/K5-L3-LAB-Day12-HoQuocToan-2A202603668-AI-SDLC/docs/evidence/phase-1/determinism/out/long_s42.b.jsonl
+  exit=0 wall=0.57s bytes=158791
+  end line: {"type":"end","ticks":858,"state":"lost","score":0}
+  note: game ket thuc som: 858/18000 tick (state trong end line)
+PASS long_s42: 2 lan byte-giong nhau (sha256 5f1e5053e97124a4...)
+
+RESULT: PASS (7/7 to hop)
+EXIT=0
