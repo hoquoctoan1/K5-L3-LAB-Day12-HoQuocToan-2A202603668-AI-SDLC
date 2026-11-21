@@ -7,6 +7,7 @@ var _vol: HSlider
 var _sens: HSlider
 var _vl: Label
 var _sl: Label
+var _cb: CheckButton
 
 func _ready() -> void:
 	var v := U.panel_root(self)
@@ -19,6 +20,11 @@ func _ready() -> void:
 	v.add_child(_sl)
 	_sens = _slider(0.25, 3.0, 0.05)
 	v.add_child(_sens)
+	_cb = CheckButton.new()
+	_cb.text = "Bảng màu dễ phân biệt"
+	_cb.add_theme_font_size_override("font_size", 22)
+	v.add_child(_cb)
+	_cb.toggled.connect(_on_cb)
 	v.add_child(U.button("Quay lại", func(): back_pressed.emit()))
 	_vol.value_changed.connect(_on_vol)
 	_sens.value_changed.connect(_on_sens)
@@ -32,6 +38,11 @@ func _on_vol(x: float) -> void:
 		settings.set_volume(x)
 		settings.save_settings()
 	_refresh()
+
+func _on_cb(on: bool) -> void:
+	if settings:
+		settings.set_colorblind(on)
+		settings.save_settings()
 
 func _on_sens(x: float) -> void:
 	if settings:
@@ -52,6 +63,7 @@ func bind(s) -> void:
 	if _vol:
 		_vol.set_value_no_signal(s.volume)
 		_sens.set_value_no_signal(s.mouse_sensitivity)
+		_cb.set_pressed_no_signal(bool(s.colorblind))
 		_refresh()
 
 func _refresh() -> void:

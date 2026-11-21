@@ -2,6 +2,7 @@ extends RefCounted
 ## Tien ich dung chung cho man hinh UI.
 const C_TEXT := Color("#F5F1E6")
 const C_DANGER := Color("#FF5A5F")
+const C_DANGER_CB := Color("#FFFFFF")   # v1.2 che do mu mau: canh bao trang + bieu tuong ⚠
 const C_GOLD := Color("#F2C14E")
 const C_SKY := Color("#0E1430")
 const C_MIST := Color("#1B2350")

@@ -20,7 +20,21 @@ func run(t: TS) -> void:
 	t.near(s2.mouse_sensitivity, 1.7, "sens round-trip")
 	s2.set_volume(5.0)
 	t.near(s2.volume, 1.0, "volume clamp")
+	# v1.2: bang mau de phan biet duoc luu
+	t.eq(s2.colorblind, false, "colorblind mac dinh false")
+	s2.set_colorblind(true)
+	t.eq(s2.save_settings(), OK, "save colorblind")
+	var s3 = SettingsCls.new(p)
+	t.ok(s3.load_settings() and s3.colorblind == true, "colorblind round-trip")
 	DirAccess.remove_absolute(p)
+	# v1.2: mau mu mau + nhap nhay 1 Hz
+	t.eq(L.shade_line_color(false), Color("#7A3CFF"), "shade line thuong")
+	t.eq(L.shade_line_color(true), Color("#00B3FF"), "shade line mu mau")
+	t.eq(L.warn_color(false), Color("#FF5A5F"), "canh bao thuong")
+	t.eq(L.warn_color(true), Color("#FFFFFF"), "canh bao mu mau trang")
+	t.ok(L.warn_text("00:10", true).begins_with("⚠"), "mu mau co bieu tuong canh bao")
+	t.eq(L.warn_text("00:10", false), "00:10", "thuong khong bieu tuong")
+	t.ok(L.fuel_blink_on(0.2) and not L.fuel_blink_on(0.7) and L.fuel_blink_on(1.2), "nhap nhay 1 Hz")
 	# clock
 	t.eq(L.format_clock(125.0), "02:05", "clock 125")
 	t.eq(L.format_clock(0.0), "00:00", "clock 0")

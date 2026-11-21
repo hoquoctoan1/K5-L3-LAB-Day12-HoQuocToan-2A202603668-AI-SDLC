@@ -4,7 +4,7 @@ extends Node
 ## PAUSE: bam Esc/P -> gui MOT frame {pause:true} (canh len) roi DUNG goi sim.step trong luc tam dung
 ## (sim dong bang theo interfaces_v2 muc 1; main khong tu tien tick). Bam lai -> gui MOT frame pause:true nua de tiep tuc.
 ## CLI (sau "--"): --night=N --auto-demo --shot=<abs png> --smoke --seed=<n> --fps-test
-##   --cam-yaw=<deg> --cam-focus=x,y,z --cam-dist=<m> --cam-height=<m> --demo-ticks=<n>
+##   --cam-yaw=<deg> --cam-focus=x,y,z --cam-dist=<m> --cam-height=<m> --demo-ticks=<n> --colorblind (chi phien nay, khong luu)
 const SimScript = preload("res://src/core/sim.gd")
 const _Cfg = preload("res://src/core/game_config.gd")
 const View = preload("res://src/adapters/view/game_view.gd")
@@ -40,6 +40,7 @@ var _demo := false
 var _smoke := false
 var _fps_test := false
 var _shot := ""
+var _cli_colorblind := false
 var _cli_night := 0
 var _demo_ticks := 900
 var _cam_focus = null
@@ -65,6 +66,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a == "--auto-demo":
 			_demo = true
+		elif a == "--colorblind":
+			_cli_colorblind = true
 		elif a == "--smoke":
 			_smoke = true
 		elif a == "--fps-test":
@@ -97,6 +100,8 @@ func _ready() -> void:
 	view.focus_override = _cam_focus
 	settings = SettingsCls.new()
 	settings.load_settings()
+	if _cli_colorblind:
+		settings.colorblind = true
 	bus = Bus.new()
 	bus.settings = settings
 	add_child(bus)
@@ -381,11 +386,13 @@ func _update_hud() -> void:
 	var vals := {
 		"flames": int(p.get("flames", 0)), "flames_max": _Cfg.FLAMES,
 		"time_left": st.time_left_s(), "lit": lit, "total": st.lanterns.size(), "score": st.score,
-		"carried": int(p.get("carried", 0)), "capacity": _Cfg.CARRY_CAPACITY,
+		"carried": int(p.get("carried", 0)), "capacity": SimState.capacity_of(p),
+		"colorblind": bool(settings.colorblind) if settings else false,
 		"dash_cd": clampf(float(p.get("dash_cd_ticks", 0)) / float(_Cfg.DASH_COOLDOWN_TICKS), 0.0, 1.0),
 		"pulse_cd": clampf(float(p.get("pulse_cd_ticks", 0)) / float(_Cfg.PULSE_COOLDOWN_TICKS), 0.0, 1.0),
 		"near_lantern": near, "arrow_screen_pos": null, "arrow_behind": false,
 	}
+	view.colorblind = bool(settings.colorblind) if settings else false
 	var cam: Camera3D = view.camera
 	if best != null and cam != null and cam.is_inside_tree():
 		var tp: Vector3 = best + Vector3(0, 2.7, 0)
@@ -401,7 +408,7 @@ func _bot_frame() -> Dictionary:
 	var inter := false
 	var best := 1e9
 	var carried: int = st.player["carried"]
-	if carried >= _Cfg.CARRY_CAPACITY or st.motes.is_empty():
+	if carried >= SimState.capacity_of(st.player) or st.motes.is_empty():
 		for l in st.lanterns:
 			if not l["lit"] and absf(l["pos"].y - pp.y) < 1.5 and _same_island(st, l["pos"], pp):
 				var d: float = (l["pos"] - pp).length()

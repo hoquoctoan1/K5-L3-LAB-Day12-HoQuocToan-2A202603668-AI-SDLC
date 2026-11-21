@@ -152,9 +152,10 @@ func _set_cd(icon: Control, rem: float) -> void:
 
 func _update_clock() -> void:
 	var t := float(values["time_left"])
-	_clock.text = L.format_clock(t)
 	var urgent := L.clock_urgent(t)
-	_clock.add_theme_color_override("font_color", U.C_DANGER if urgent else U.C_TEXT)
+	var cb: bool = bool(values.get("colorblind", false))
+	_clock.text = L.warn_text(L.format_clock(t), cb) if urgent else L.format_clock(t)
+	_clock.add_theme_color_override("font_color", L.warn_color(cb) if urgent else U.C_TEXT)
 	_clock.visible = (not urgent) or L.blink_on(_t)
 
 func _process(delta: float) -> void:

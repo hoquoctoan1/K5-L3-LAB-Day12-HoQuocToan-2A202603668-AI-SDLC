@@ -32,5 +32,20 @@ static func edge_arrow(screen_pos: Vector2, size: Vector2, behind: bool, margin:
 	var k := minf(half.x / maxf(absf(d.x), 0.001), half.y / maxf(absf(d.y), 0.001))
 	return {"visible": true, "angle": d.angle(), "pos": c + d * k}
 
+## v1.2: den sap het dau (fuel < 30) nhap nhay cham 1 Hz.
+static func fuel_blink_on(t: float) -> bool:
+	return fmod(t, 1.0) < 0.5
+
+## Mau canh bao UI: thuong #FF5A5F, che do mu mau #FFFFFF (kem ⚠ qua warn_text).
+static func warn_color(colorblind: bool) -> Color:
+	return Color("#FFFFFF") if colorblind else Color("#FF5A5F")
+
+static func warn_text(text: String, colorblind: bool) -> String:
+	return ("⚠ " + text) if colorblind else text
+
+## Vien + mat Bong Muc: #7A3CFF, che do mu mau #00B3FF.
+static func shade_line_color(colorblind: bool) -> Color:
+	return Color("#00B3FF") if colorblind else Color("#7A3CFF")
+
 static func prompt_text(carried: int, capacity: int) -> String:
 	return "E — Nạp ánh sáng (%d/%d)" % [carried, capacity]

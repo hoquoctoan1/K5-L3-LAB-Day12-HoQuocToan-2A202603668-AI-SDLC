@@ -1,6 +1,7 @@
 extends Node3D
 ## View thuan (P2-D1): ve SimState v2 + map. Khong anh huong Sim. Entry: apply_state(state), play_event(ev).
 const _Cfg = preload("res://src/core/game_config.gd")
+const _HudL = preload("res://src/adapters/view/ui/hud_logic.gd")
 const MapBuilder = preload("res://src/core/maps/map_builder.gd")
 
 const SKY := Color("#0E1430")
@@ -22,6 +23,8 @@ const RED := Color("#C8102E")
 const GOLD := Color("#F2C14E")
 const DRIFT := Color("#8FA3B8")
 
+## v1.2 che do mu mau (TICKET-03 muc 6): main.gd gan tu Settings.colorblind.
+var colorblind: bool = false
 var camera_yaw: float = 0.0
 var camera_distance: float = 9.0
 var camera_height: float = 5.0
@@ -320,6 +323,20 @@ func _make_lantern() -> Node3D:
 	body.name = "Body"
 	var core := _mesh(n, _sphere(0.28), _mat(LANT_CORE, 4.0, LANT_CORE, true), Vector3(0, 2.7, 0))
 	core.name = "Core"
+	# v1.2: vet rach tren giay (chi hien khi den tat) - phan biet sang/tat khong can mau
+	var tear := Node3D.new()
+	tear.name = "Tear"
+	tear.position = Vector3(0, 2.7, 0.46)
+	n.add_child(tear)
+	for k in 3:
+		var sgn := 1.0 if k % 2 == 0 else -1.0
+		var seg := _mesh(tear, _box(0.08, 0.32, 0.02), _mat(Color("#1A1C24")), Vector3(-0.12 + 0.12 * k, 0.06 * sgn, 0))
+		seg.rotation.z = 0.6 * sgn
+	# v1.2: thanh dau tren den dang sang
+	var bar_bg := _mesh(n, _box(1.0, 0.1, 0.1), _mat(Color("#2A2A33")), Vector3(0, 3.55, 0))
+	bar_bg.name = "FuelBg"
+	var bar := _mesh(n, _box(1.0, 0.12, 0.12), _mat(LANT_LIT, 2.0, LANT_LIT, true), Vector3(0, 3.55, 0))
+	bar.name = "FuelBar"
 	var light := OmniLight3D.new()
 	light.name = "Light"
 	light.position = Vector3(0, 2.7, 0)
@@ -343,7 +360,8 @@ func _make_shade() -> Node3D:
 	ol.scale = Vector3(1.1, 1.1, 1.1)
 	ol.name = "Outline"
 	for sx in [-0.3, 0.3]:
-		_mesh(n, _sphere(0.1), _mat(Color("#FFE58A"), 2.0, MOTE_HALO, true), Vector3(sx, 1.0, 0.75))
+		var eye := _mesh(n, _sphere(0.1), _mat(SHADE_LINE, 2.0, SHADE_LINE, true), Vector3(sx, 1.0, 0.75))
+		eye.name = "Eye" if sx < 0.0 else "Eye2"
 	return n
 
 func _make_drifter() -> Node3D:
@@ -393,10 +411,25 @@ func apply_state(state) -> void:
 		var on: bool = d["lit"]
 		if on:
 			lit += 1
-		(n.get_node("Body") as MeshInstance3D).material_override = _mat(LANT_LIT, 3.0, LANT_LIT) if on else _mat(LANT_OFF)
-		(n.get_node("Core") as MeshInstance3D).visible = on
-		(n.get_node("Ring") as MeshInstance3D).visible = on
-		(n.get_node("Light") as OmniLight3D).light_energy = 3.0 if on else 0.0
+		# v1.2: fuel 0..100; sap het dau (< 30) nhap nhay 1 Hz va mat vung an toan
+		var fuel: float = SimState.fuel_of(d)
+		var low: bool = SimState.is_low_fuel(d)
+		var glow: bool = on and (not low or _HudL.fuel_blink_on(_time))
+		var body_n := n.get_node("Body") as MeshInstance3D
+		body_n.material_override = _mat(LANT_LIT, 3.0, LANT_LIT) if glow else (_mat(LANT_LIT.darkened(0.5)) if on else _mat(LANT_OFF))
+		body_n.scale = Vector3.ONE if on else Vector3(1.0, 0.8, 1.0)   # den tat xep 20%
+		(n.get_node("Tear") as Node3D).visible = not on
+		(n.get_node("Core") as MeshInstance3D).visible = glow
+		(n.get_node("Ring") as MeshInstance3D).visible = SimState.has_safe_zone(d)
+		(n.get_node("Light") as OmniLight3D).light_energy = (3.0 if glow else 1.0) if on else 0.0
+		var bar := n.get_node("FuelBar") as MeshInstance3D
+		var k_f := clampf(fuel / 100.0, 0.0, 1.0)
+		bar.visible = on and (not low or _HudL.fuel_blink_on(_time))
+		bar.scale = Vector3(maxf(k_f, 0.001), 1.0, 1.0)
+		bar.position.x = -0.5 * (1.0 - k_f)
+		var wc: Color = _HudL.warn_color(colorblind)
+		bar.material_override = _mat(wc, 2.0, wc, true) if low else _mat(LANT_LIT, 2.0, LANT_LIT, true)
+		(n.get_node("FuelBg") as MeshInstance3D).visible = on
 	for i in _charm_nodes.size():
 		var c: Dictionary = state.charms[i]
 		var cn: Node3D = _charm_nodes[i]
@@ -421,6 +454,7 @@ func apply_state(state) -> void:
 			mn.visible = (state.tick / 4) % 2 == 0
 
 	_sync_pool(_shade_pool, _shade_root, state.shades.size(), _make_shade)
+	var sline: Color = _HudL.shade_line_color(colorblind)
 	for i in state.shades.size():
 		var s: Dictionary = state.shades[i]
 		var sn: Node3D = _shade_pool[i]
@@ -432,18 +466,25 @@ func apply_state(state) -> void:
 				body.material_override = _mat(SHADE_STUN, 0.2, SHADE_STUN)
 				sn.scale = Vector3(1.25, 0.6, 1.25)
 			"spawning":
-				body.material_override = _mat(SHADE_BODY, 0.5, SHADE_LINE)
+				body.material_override = _mat(SHADE_BODY, 0.5, sline)
 				sn.scale = Vector3.ONE * 0.5
 			"recoil":
-				body.material_override = _mat(SHADE_BODY, 1.2, SHADE_LINE)
+				body.material_override = _mat(SHADE_BODY, 1.2, sline)
 				sn.scale = Vector3(0.9, 1.2, 0.9)
 			"chase":
-				body.material_override = _mat(SHADE_BODY, 1.0, SHADE_LINE)
+				body.material_override = _mat(SHADE_BODY, 1.0, sline)
 				sn.scale = Vector3.ONE * 1.1
 			_:
-				body.material_override = _mat(SHADE_BODY, 0.5, SHADE_LINE)
+				body.material_override = _mat(SHADE_BODY, 0.5, sline)
 				sn.scale = Vector3.ONE
 		sn.get_node("Outline").visible = ss != "stunned"
+		var olm: StandardMaterial3D = (sn.get_node("Outline") as MeshInstance3D).material_override
+		if olm.albedo_color != sline:
+			olm.albedo_color = sline
+		for en in ["Eye", "Eye2"]:
+			(sn.get_node(en) as MeshInstance3D).material_override = _mat(sline, 2.0, sline, true)
+		if ss == "drain":
+			sn.scale = Vector3(1.15, 0.85, 1.15)
 
 	_sync_pool(_drifter_pool, _drifter_root, state.drifters.size(), _make_drifter)
 	for i in state.drifters.size():
