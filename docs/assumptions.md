@@ -41,3 +41,23 @@ Mọi số tuning là **provisional** (D3). Chỉ khai báo ở `godot/src/core/
 | `night_start` | Sim phát ở bước đầu mọi đêm (kể cả Đêm 1); kịch bản Phase 1 bỏ qua event này |
 | Tạm dừng | `tick` tăng, `sim_tick`/thời gian/hồi chiêu/spawn đứng yên; nhấn pause khi đang dừng thì tiếp tục |
 | `ttl_s` đom đóm ngẫu nhiên | -1 |
+
+## Phase 3 (contract v1.2, TICKET-03)
+Chưa có file `TEST_CONTRACT_v1.2.md`, tên trường lấy từ ticket mục 7. Product Owner chọn Q1 = A; Q2–Q9 dùng theo đề xuất trong `docs/TASKS_P3.md`.
+| # | Mục mơ hồ | Quyết định |
+|---|---|---|
+| Q1 | "Đi về đèn tắt gần nhất như trước" (Phase 2 vốn đi ngẫu nhiên) | Wander nhắm đèn yếu (sáng, fuel < 30) gần nhất, không có thì nhắm đèn tắt gần nhất, hòa thì id nhỏ hơn. Không còn đèn tắt thì đi ngẫu nhiên. Tốc độ wander 0,5×. |
+| Q2 | `fuel_drain` mỗi 60 tick | Đếm theo từng con từ lúc vào `drain`; phát ở tick hút thứ 60, 120, …; `fuel` là giá trị sau khi trừ ở tick đó |
+| Q3 | Event khi nạp | Thắp mới/thắp lại phát `deposit` + `lantern_lit{relight}`; châm dầu chỉ phát `refuel` |
+| Q4 | Đẩy Bóng Mực khi châm lên ≥ 30 | Dùng chung cơ chế vùng an toàn: mọi con ở trong 6 m của đèn có fuel ≥ 30 bị đẩy ra trong ≤ 30 tick, không gây sát thương |
+| Q5 | Scenario `lit:true` thiếu trường | Thiếu `fuel` thì 100; thiếu `ever_lit` thì bằng `lit`; `relit_count` 0; đèn đặt sẵn không tính `successful_lights` |
+| Q6 | Làm tròn `fuel` | Lưu số nguyên 1/60; xuất `round_half_up(units/6)/10`; đèn tắt 0.0 |
+| Q7 | `drain` có gây hit không | Không; chỉ `wander`/`chase` gây hit |
+| Q8 | Đèn hết dầu ở tick bình minh | Tắt ở bước 2b trước, xét thắng/thua ở bước 11 sau |
+| Q9 | Pulse +15 | Con đang `drain` lúc bị pulse thì tổng +15, còn lại +5 |
+| Q10 | Hết choáng | Về `wander` (ticket mục 2), áp dụng cho mọi Bóng Mực |
+| Q11 | Tên khóa `score` trong `game.contract.json` | `per_mote` 5, `per_lantern` 100, `per_relight` 40, `per_stun` 5, `per_stun_drain` 15, `per_lit_lantern_dawn` 50, `per_flame_left` 50 |
+| Q12 | Thứ tự khóa snapshot mới | lantern `{id,pos,lit,deposited,fuel,ever_lit,relit_count}`; player thêm `capacity` sau `carried` |
+| Q13 | Giá trị scenario hợp lệ | `fuel` trong [0,100]; `target_lantern_id` phải là id đèn có thật hoặc ""; sai thì thoát mã 2 |
+| Q14 | Mắt Bóng Mực | Đổi cùng màu viền (#7A3CFF / #00B3FF) theo ticket mục 6 (Phase 2 dùng mắt vàng) |
+

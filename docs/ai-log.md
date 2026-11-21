@@ -44,3 +44,24 @@ Trích nguyên văn các prompt gửi cho agent không có trong repo. Dưới �
 - Báo cáo của agent cần được kiểm tra lại. `docs/TASKS.md` mục 6 yêu cầu mọi báo cáo kèm lệnh đã chạy và output thật. Khi nhận báo cáo, cần đối chiếu với output đó trước khi tin.
 - Tài liệu dùng nhiều ngôn ngữ cùng lúc (tiếng Việt cho người chấm, tên kỹ thuật tiếng Anh). Chấp nhận được, nhưng cần nhất quán trong từng file.
 - Một số chi tiết trong README (điều khiển, scripts test) chưa tồn tại trong repo khi viết. README phải ghi rõ điều đó thay vì mô tả như đã có.
+
+## 6. Phase 3 (TICKET-03, contract v1.2)
+
+| Mục | Ghi nhận |
+|---|---|
+| Công cụ | Claude Code trong VS Code, một phiên Claude Opus 5.5. Product Owner (người dùng) điều phối bằng tiếng Việt. |
+| Cách làm | Một agent làm tuần tự theo `docs/TASKS_P3.md`: A0 (số chuẩn) → B1–B4 (luật lõi, codec) → C1 (regression + 17 kịch bản) → D1 (hiển thị) → D2 (tài liệu). Mỗi bước một commit. Review độc lập (E1) dùng một agent khác. |
+| Prompt chính | "báo cáo tiến độ…", "push phase-2 …", ticket dán nguyên văn, "chọn a" (Q1), "làm tiếp phase 3 cho đến khi xong". |
+| Token | **Không có số đo** (công cụ không hiển thị token theo phiên). Không ước tính bằng con số để tránh bịa. |
+
+Cách tiết kiệm token đã dùng ở Phase 3:
+- Đọc có chọn lọc: chỉ đọc system và test liên quan (grep trước, đọc sau), không đọc toàn repo.
+- Không tạo subagent cho việc code. Một phiên giữ ngữ cảnh, đỡ tốn token mô tả lại cho agent mới.
+- Đáp án kịch bản tính tay trước, sau đó chỉ chạy lại các bộ bị fail (`run_scenarios*.sh <tên>`), không chạy cả bộ mỗi lần.
+- Dùng script Python để sửa nhiều chỗ một lúc, thay vì gọi nhiều lệnh sửa nhỏ.
+
+Lỗi và rủi ro của AI ở Phase 3, và cách phát hiện:
+- Viết sai luật ở một chỗ: `interfaces_v2.md` ban đầu ghi `drain_ticks` tăng ở ShadeSystem, nhưng code tăng ở `LanternSystem.tick_fuel`. Phát hiện khi đọc lại để viết ADR, đã sửa.
+- Heredoc bash chứa ký tự Unicode/quote bị shell cắt hai lần. Đã chuyển sang ghi script Python ra file rồi chạy.
+- Test hiệu năng `≤ 30 s` fail (30,8–31,6 s). AI không nới ngưỡng. AI đo lại bản `phase-2` trên cùng máy (36,5 s cho 21600 tick, tương đương mỗi tick) và tìm ra máy đang chạy pin, CPU 1,6 GHz. Ghi trung thực trong README.
+- Khi mọi kịch bản P3 đều đạt ngay lần đầu, AI kiểm tra xem checker có vô dụng không: cho checker đọc output sai (`w01` với file của `w02`) và thấy checker báo lỗi đúng.

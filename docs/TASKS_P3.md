@@ -69,7 +69,11 @@ Mỗi file một owner. Không chạy `--import`/`--editor`. File mới tham chi
 ## 5. Trạng thái
 | ID | Trạng thái |
 |---|---|
-| A0-P3 | TESTING → REVIEW: `test_config` đạt. Core 3142 checks, 10 failures; cả 10 là test luật cũ bị thay (thời gian Đêm 300/330/360 s, thưởng giây): `test_lifecycle_system` 6, `test_sim` 1, `test_e2e` 3. Log ở `docs/evidence/phase-3/a0_core_tests.txt`. Chưa chạy kịch bản P1/P2 (việc của C1). |
-| P3-B1..B4 | TODO (đã có thể bắt đầu). `test_e2e.gd` giao cho P3-B4. |
-| P3-C1, D1, D2 | TODO |
-| E1–E3 | TODO |
+| A0-P3 | DONE (`59ecb26`) |
+| P3-B1..B4 | DONE (`86ef0e8`) |
+| P3-C1 | DONE (`7f4342a`): 17 kịch bản P3, sửa 14 kịch bản P1/P2 bị luật thay |
+| P3-D1 | DONE (`dc6d0d1`), chưa chơi thử bằng tay |
+| P3-D2 | DONE: ADR, CHANGELOG, README, assumptions, ai-log, retro |
+| E1 | DONE: `docs/evidence/phase-3/E1_review.md` (không có lỗi nghiêm trọng) |
+| E2 | DONE: log ở `docs/evidence/phase-3/` (core 3178/0, P1 18/18, P2 39/39, P3 17/17, tất định 7/7) |
+| E3 | tag `phase-3` theo yêu cầu Product Owner |

@@ -9,7 +9,7 @@ extends RefCounted
 ##  Het choang -> wander (TICKET-03 muc 2, thay cho "chase neu <= 18" cua v1.1). drain KHONG gay sat thuong [GIA DINH Q7].
 ## Trang thai: spawning (SPAWNING_TICKS=30, khong di chuyen/khong cham) -> wander <-> chase; recoil; stunned.
 ## wander: di bo ngau nhien (rng_shade), toc do = shade_speed * WANDER_SPEED_FACTOR (0.5) [ASSUMPTION].
-## wander->chase khi XZ toi May <= 12; chase->wander khi > 18. Het stunned/recoil: chase neu <= 18 else wander.
+## wander->chase khi XZ toi May <= 12; chase->wander khi > 18. Het recoil: chase neu <= 18 else wander (v1.1, giu). Het stunned: wander (v1.2).
 ## Truong shade them (lazy): wander_dir Vector2, wander_ticks int, _fresh bool (pulse vua tao).
 ## Thu tu xu ly: tang dan theo hau to so cua id (S1,S2,..; id khong co so = 0, hoa theo thu tu mang).
 ## Sinh trong tick nay chi tuong tac tu tick sau (spawn_system chay sau).

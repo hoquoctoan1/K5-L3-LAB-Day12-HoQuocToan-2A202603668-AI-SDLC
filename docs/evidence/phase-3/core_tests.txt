@@ -1,0 +1,23 @@
+# 2026-11-21T08:45 Windows 11, Godot 4.7.2, may chay PIN (BatteryStatus=1). Thoi gian Dem 3 (18000 tick, in-process) dao dong giua cac lan do: 17,1 s (lan nay) den 31,6 s (cac lan truoc, nguong 30 s).
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ran test_charm
+ran test_config
+ran test_drifter
+ran test_input_decoder
+ran test_jump_pad
+ran test_lantern_v3
+ran test_lifecycle_system
+ran test_maps
+ran test_mote_lantern
+ran test_player_system
+ran test_pulse_system
+ran test_shade_system
+ran test_sim
+ran test_ui_logic
+ran test_wind
+ran test_codec
+e2e night3 18000 ticks in-process: 17073 ms
+ran test_e2e
+checks=3178 failures=0
+exit=0

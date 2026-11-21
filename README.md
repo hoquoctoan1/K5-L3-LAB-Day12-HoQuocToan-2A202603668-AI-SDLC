@@ -2,9 +2,9 @@ Video demo: (se bo sung o Phase 4)
 
 # Đảo Đèn Lồng
 
-Game 3D góc nhìn thứ ba làm bằng Godot 4.7 (GDScript). Bạn là người giữ đèn nhỏ tuổi trên một hòn đảo giữa sương đen. Gom đom đóm, mang về thắp đủ 5 Đèn Lồng Lớn trước khi trời sáng, và né hoặc làm choáng Bóng Mực đang đuổi theo. Thua khi hết máu (flames) hoặc hết đêm (dawn).
+Game 3D góc nhìn thứ ba làm bằng Godot 4.7 (GDScript). Bạn là người giữ đèn nhỏ tuổi trên một hòn đảo giữa sương đen. Gom đom đóm, thắp Đèn Lồng Lớn và **giữ chúng sáng tới bình minh**: đèn hao dầu và Bóng Mực tìm đến hút dầu đèn yếu. Thắng khi còn sống lúc bình minh với ít nhất 60% số đèn đang sáng. Thua khi hết Ngọn Lửa (`no_flames`) hoặc bình minh mà thiếu đèn (`dawn`).
 
-Trạng thái: **Phase 2 (ba hòn đảo, contract v1.1).** Phase 1 đã có tag `phase-1`. Các mục chưa xác minh được ghi trong "Giới hạn đã biết".
+Trạng thái: **Phase 3 ("Đèn cạn dầu", contract v1.2).** Đã có tag `phase-1` và `phase-2`. Quyết định thiết kế ở `docs/adr/ADR-001-den-can-dau.md`, thay đổi phá vỡ tương thích ở `CHANGELOG.md`. Các mục chưa xác minh được ghi trong "Giới hạn đã biết".
 
 ## Cài đặt và chạy
 
@@ -28,26 +28,27 @@ Lưu ý GPU: project dùng renderer `gl_compatibility` (OpenGL). Trên máy Inte
 |---|---|
 | `W` `A` `S` `D` | Di chuyển, theo hướng camera |
 | `Space` | Nhảy |
-| `E` | Nạp đom đóm đang mang vào Đèn Lồng gần nhất trong bán kính tương tác |
+| `E` | Nạp đom đóm vào Đèn Lồng gần nhất trong 2 m: thắp đèn chưa sáng (10, hoặc 5 nếu đèn từng sáng) hoặc châm dầu đèn đang sáng chưa đầy (mỗi đom đóm +10 dầu) |
 | `F` | Tỏa sáng (pulse): tốn đom đóm, làm choáng và đẩy lùi Bóng Mực trong bán kính |
 | Chuột, `Q`, `R` | Xoay camera |
 | `Shift` | Lướt (dash) |
 | `Esc` / `P` | Tạm dừng |
 | `Enter` | Xác nhận / chơi lại từ màn kết quả |
 
-Đom đóm được nhặt tự động khi đi đủ gần (bán kính 1.2 m), không cần phím.
+Đom đóm được nhặt tự động khi đi đủ gần (1.0 m theo mặt phẳng, chênh cao ≤ 1.5 m), không cần phím. Sức chứa bắt đầu ở 10, mỗi lần thắp thành công +2, tối đa 20 (HUD hiện số ô).
+
+Đèn: thanh dầu trên đỉnh đèn; dầu < 30 thì đèn nhấp nháy chậm và mất vùng an toàn; đèn tắt bị xẹp và có vết rách. Cài đặt có mục "Bảng màu dễ phân biệt" (Bóng Mực xanh #00B3FF, cảnh báo trắng kèm ⚠), được lưu lại.
 
 ## Điểm số
 
-Lấy từ `godot/src/core/game_config.gd`:
+Lấy từ `godot/src/core/game_config.gd` (contract v1.2, TICKET-03 mục 5):
 
-- Nhặt một đom đóm: **+10** (tính khi nhặt, không tính khi nạp).
-- Thắp một Đèn Lồng: **+100**.
-- Mỗi Bóng Mực bị pulse làm choáng: **+5** (kể cả Bóng Mực đang choáng bị choáng lại).
-- Chỉ khi thắng: **+50** cho mỗi máu còn lại.
-- Chỉ khi thắng: **+1** cho mỗi giây còn lại (làm tròn xuống theo giây).
+- Mỗi đom đóm **nạp** vào đèn (thắp mới, thắp lại, châm dầu): **+5**. Nhặt không có điểm.
+- Thắp lần đầu: **+100**. Thắp lại đèn đã tắt: **+40**.
+- Mỗi Bóng Mực trúng Tỏa Sáng: **+5**, hoặc **+15** nếu nó đang hút dầu (`drain`).
+- Chỉ khi thắng, ở bình minh: mỗi đèn đang sáng **+50 + floor(dầu)**, mỗi Ngọn Lửa còn lại **+50**. Không còn thưởng theo thời gian.
 
-Thắng khi thắp đủ 5 đèn. Thua khi hết máu (`no_flames`) hoặc hết 300 giây đêm (`dawn`). Nếu đèn thứ 5 sáng cùng tick với điều kiện thua thì tính là thắng.
+Đêm dài 240 / 270 / 300 giây (Đêm 1 / 2 / 3). Thắp đủ đèn **không** kết thúc Đêm. Ở bình minh: còn Ngọn Lửa và số đèn đang sáng ≥ ceil(0,6 × tổng đèn) (3/5, 4/6, 5/7) thì thắng (`dawn_survived`), không thì thua (`dawn`). Hết Ngọn Lửa luôn thua ngay (`no_flames`), kể cả ở tick bình minh.
 
 ## Chạy test
 
@@ -61,7 +62,9 @@ Kịch bản có đáp án tính tay (18 bộ, `tests/scenarios/`): `sh scripts/
 
 Kiểm tra tất định (chạy mỗi tổ hợp hai lần, so từng byte): `bash scripts/verify_determinism.sh`. Log thật ở `docs/evidence/phase-1/determinism/run.txt`.
 
-Kết quả lần chạy gần nhất trên máy phát triển (Windows, Godot 4.7.2): bộ test lõi `checks=304 failures=0`; kịch bản `passed=18 failed=0`; tất định 7/7 tổ hợp giống hệt. Chưa chạy trên macOS/Linux hay CI.
+Kịch bản Phase 2 (39 bộ): `sh scripts/run_scenarios_p2.sh`. Kịch bản Phase 3 / contract v1.2 (17 bộ, `tests/scenarios/p3/`): `sh scripts/run_scenarios_p3.sh`.
+
+Kết quả lần chạy gần nhất (2026-11-21, Windows 11, Godot 4.7.2, log ở `docs/evidence/phase-3/`): test lõi `checks=3178 failures=0`; kịch bản P1 `passed=18 failed=0`, P2 `passed=39 failed=0`, P3 `passed=17 failed=0`; tất định 7/7 tổ hợp giống hệt. Chưa chạy trên macOS/Linux; CI có workflow nhưng chưa xác nhận chạy xanh.
 
 ## Chế độ headless
 
@@ -109,6 +112,13 @@ Dockerfile chưa được build hay chạy thử. Máy phát triển không có 
   - Bằng chứng: ảnh `evidence/screenshots/b8_game_view.png` và `d1_gameplay.png` (một đèn sáng). **Chưa có ảnh so sánh trước/sau**.
 
 ## Giới hạn đã biết
+
+Phase 3:
+- Chưa có file `TEST_CONTRACT_v1.2.md` gốc. Tên khóa `score` trong `game.contract.json`, thứ tự khóa snapshot mới và nhịp `fuel_drain` (đếm theo từng Bóng Mực) là giả định (`docs/assumptions.md` mục Phase 3).
+- Hiệu năng: Đêm 3 (18000 tick) mất 17,1 s ở lần chạy cuối, nhưng các lần trước trên cùng laptop chạy pin mất 30,8–31,6 s, vượt ngưỡng 30 s. Bản `phase-2` đo cùng lúc cũng chậm tương tự.
+- Chưa chơi thử bằng tay luật dầu đèn, chế độ mù màu và nhấp nháy 1 Hz; mới có test logic và ảnh chụp demo tự động.
+
+Từ các phase trước:
 
 - `scripts/headless.sh` đổi đường dẫn tương đối của `--scenario/--inputs/--out` thành tuyệt đối (theo thư mục gọi). `scripts/headless.cmd` chưa làm điều này: trên Windows hãy dùng đường dẫn tuyệt đối với bản `.cmd`.
 - Scenario có `random_motes:true` kèm `motes:[]` (hoặc `random_shades:true` kèm `shades:[]`) vẫn sinh ngẫu nhiên lúc đầu, trái với cách đọc "mảng rỗng = không có con nào" của contract mục D. Chưa sửa; chỉ ảnh hưởng khi test ghép đúng hai trường này.

@@ -1,0 +1,19 @@
+PASS f01_decay_out
+PASS f02_refuel
+PASS f04_relight
+PASS c01_capacity_20
+PASS d01_drain_one
+PASS d02_drain_two
+PASS d03_drain_to_chase
+PASS d04_pulse_drain
+PASS d05_refuel_push
+PASS w01_dawn_win_3of5
+PASS w02_dawn_lose_2of5
+PASS w03_noflames_at_dawn
+PASS w04_n3_win_5of7
+PASS w05_out_at_dawn
+PASS e01_bad_fuel
+PASS e02_bad_target
+PASS e03_bad_ever_lit
+passed=17 failed=0
+exit=0
