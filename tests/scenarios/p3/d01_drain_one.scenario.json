@@ -1,0 +1,1 @@
+{"random_motes":false,"random_shades":false,"random_drifters":false,"wind_enabled":false,"motes":[],"shades":[{"id":"S1","pos":[3,0,20],"state":"wander"}],"drifters":[],"charms":[],"player":{"pos":[0,0,0],"carried":0,"flames":3},"lanterns":[{"id":"L1","pos":[0,0,20],"lit":true,"fuel":20}]}
