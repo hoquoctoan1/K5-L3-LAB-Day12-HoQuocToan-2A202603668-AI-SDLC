@@ -5,3 +5,6 @@ Files: `s04_deposit_partial.scenario.json`, `s04_deposit_partial.inputs.json`. Q
 Setup: carried 3, L1 at (0,0,2) deposited 0, interact tick 0; ticks 30.
 
 Expected: dist 2 <= 2.5. amount=min(3,5-0)=3. Event tick 1: `deposit {L1,3,3}`. Khong lantern_lit. L1 lit=false, deposited 3, carried 0. End: playing, 30, 0.
+
+## P3 (contract v1.2) - dap an moi
+TICKET-03 muc 5: +5 moi mote nap. 3 mote -> score 15 (v1.1: 0).

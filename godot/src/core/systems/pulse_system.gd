@@ -7,7 +7,8 @@ extends RefCounted
 ##  - moi muc tieu: state "stunned", state_ticks_left = PULSE_STUN_TICKS (lam moi neu dang choang),
 ##    knock_dir (XZ, ra xa tam; trung vi tri -> +X), knock_ticks_left = PULSE_KNOCK_TICKS.
 ##    Viec DI CHUYEN day lui (PULSE_PUSH_M / PULSE_KNOCK_TICKS moi tick, dung khi gap vat can) do shade_system lam o buoc 8.
-##  - +SCORE_PER_STUN moi con moi lan (ke ca dang choang). Khong giet.
+##  - +SCORE_PER_STUN moi con moi lan (ke ca dang choang); v1.2: con dang "drain" -> tong +SCORE_PER_STUN_DRAIN (15).
+##    Con bi choang roi drain: target_lantern_id = "", drain_ticks = 0. Khong giet.
 ##  - event pulse{stunned_ids} luon phat (co the rong).
 ## Gio Lac (drifter): drifter_system tu doc state.extras["pulse_tick"] (== state.tick khi pulse xay ra tick nay, else -1)
 ##  va state.extras["pulse_center"] (Vector3) roi tu xu ly; khong cong diem.
@@ -38,11 +39,13 @@ static func step(state: SimState, input: Dictionary, events: Array) -> void:
 			continue
 		var d := Vector2(spos.x - center.x, spos.z - center.z)
 		var dir := Vector2(1.0, 0.0) if d.length() < 1e-6 else d.normalized()
+		state.score += GameConfig.SCORE_PER_STUN_DRAIN if s["state"] == "drain" else GameConfig.SCORE_PER_STUN
+		s["target_lantern_id"] = ""
+		s["drain_ticks"] = 0
 		s["state"] = "stunned"
 		s["state_ticks_left"] = GameConfig.PULSE_STUN_TICKS
 		s["knock_dir"] = dir
 		s["knock_ticks_left"] = GameConfig.PULSE_KNOCK_TICKS
 		s["_fresh"] = true   # shade_system khong tru tick choang trong tick nay
-		state.score += GameConfig.SCORE_PER_STUN
 		ids.append(s["id"])
 	events.append({"name": "pulse", "data": {"stunned_ids": ids}})

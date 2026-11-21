@@ -1,6 +1,12 @@
 class_name ShadeSystem
 extends RefCounted
-## Bong Muc (buoc 8 di chuyen + buoc 9 cham), contract v1.1.
+## Bong Muc (buoc 8 di chuyen + buoc 9 cham), contract v1.2 (P3-B2, TICKET-03 muc 2).
+## v1.2: vung an toan chi quanh den SimState.has_safe_zone (sang, fuel >= 30).
+##  wander: nham den sang fuel < 30 gan nhat (XZ tu Bong Muc, hoa -> id nho); khong co -> den TAT gan nhat
+##   (Q1 = A); khong co nua -> di ngau nhien nhu v1.1. Di toi muc tieu voi toc do wander. target_lantern_id = muc tieu.
+##  wander -> drain khi XZ <= DRAIN_RANGE_M (2 m) toi den yeu muc tieu: dung yen; dau bi tru o buoc 2b (lantern_system).
+##  drain -> chase (May XZ <= 6 m) | wander (den tat, fuel >= 30, hoac XZ > 2 m) | stunned (pulse_system).
+##  Het choang -> wander (TICKET-03 muc 2, thay cho "chase neu <= 18" cua v1.1). drain KHONG gay sat thuong [GIA DINH Q7].
 ## Trang thai: spawning (SPAWNING_TICKS=30, khong di chuyen/khong cham) -> wander <-> chase; recoil; stunned.
 ## wander: di bo ngau nhien (rng_shade), toc do = shade_speed * WANDER_SPEED_FACTOR (0.5) [ASSUMPTION].
 ## wander->chase khi XZ toi May <= 12; chase->wander khi > 18. Het stunned/recoil: chase neu <= 18 else wander.
@@ -53,7 +59,7 @@ static func _zone_of(state: SimState, p: Vector2) -> Variant:
 	var best: Variant = null
 	var best_d := INF
 	for l in state.lanterns:
-		if not l.get("lit", false):
+		if not SimState.has_safe_zone(l):
 			continue
 		var c := _flat(l["pos"])
 		var d := p.distance_to(c)
@@ -94,6 +100,40 @@ static func _try_move(state: SimState, s: Dictionary, delta: Vector2) -> bool:
 static func _free_state(dist: float) -> String:
 	return "chase" if dist <= GameConfig.SHADE_LOSE_INTEREST_M else "wander"
 
+static func _lantern_by_id(state: SimState, id: String) -> Dictionary:
+	for l in state.lanterns:
+		if str(l["id"]) == id:
+			return l
+	return {}
+
+## Muc tieu cua Bong Muc wander: den yeu gan nhat, khong co thi den tat gan nhat, khong co nua -> {}.
+static func pick_target(state: SimState, sp: Vector2) -> Dictionary:
+	var best: Dictionary = {}
+	for pass_ in [0, 1]:
+		var best_d := INF
+		for l in state.lanterns:
+			var ok: bool = SimState.is_low_fuel(l) if pass_ == 0 else not l["lit"]
+			if not ok:
+				continue
+			var d := sp.distance_to(_flat(l["pos"]))
+			if best.is_empty() or d < best_d - 1e-6 or (absf(d - best_d) <= 1e-6 and str(l["id"]) < str(best["id"])):
+				best = l
+				best_d = d
+		if not best.is_empty():
+			return best
+	return best
+
+## Tinh muc tieu 1 lan/tick, cache vao s["_tg"] (khong vao snapshot).
+static func _wander_target(state: SimState, s: Dictionary) -> Dictionary:
+	var tg := pick_target(state, _flat(s["pos"]))
+	s["_tg"] = tg
+	return tg
+
+static func _enter_wander(s: Dictionary) -> void:
+	s["state"] = "wander"
+	s["target_lantern_id"] = ""
+	s["drain_ticks"] = 0
+
 static func _update(state: SimState, s: Dictionary, pp: Vector2) -> void:
 	var fresh: bool = s.get("_fresh", false)
 	s["_fresh"] = false
@@ -117,7 +157,15 @@ static func _update(state: SimState, s: Dictionary, pp: Vector2) -> void:
 				s["state_ticks_left"] = int(s["state_ticks_left"]) - 1
 			if int(s["state_ticks_left"]) <= 0:
 				s["state_ticks_left"] = 0
-				s["state"] = _free_state(dist)
+				_enter_wander(s)   # v1.2: het choang -> wander
+		"drain":
+			var tl := _lantern_by_id(state, str(s.get("target_lantern_id", "")))
+			if dist <= GameConfig.DRAIN_CHASE_M:
+				s["state"] = "chase"
+				s["target_lantern_id"] = ""
+				s["drain_ticks"] = 0
+			elif tl.is_empty() or not SimState.is_low_fuel(tl) or _flat(s["pos"]).distance_to(_flat(tl["pos"])) > GameConfig.DRAIN_RANGE_M + 1e-4:
+				_enter_wander(s)
 		"recoil":
 			if not inside:
 				_try_move(state, s, s["recoil_dir"] * (GameConfig.SHADE_RECOIL_M / float(GameConfig.SHADE_RECOIL_TICKS)))
@@ -130,6 +178,8 @@ static func _update(state: SimState, s: Dictionary, pp: Vector2) -> void:
 				s["state"] = "chase"
 			elif s["state"] == "chase" and dist > GameConfig.SHADE_LOSE_INTEREST_M:
 				s["state"] = "wander"
+			if s["state"] == "chase":
+				s["target_lantern_id"] = ""
 			if inside:
 				pass
 			elif s["state"] == "chase":
@@ -137,7 +187,20 @@ static func _update(state: SimState, s: Dictionary, pp: Vector2) -> void:
 				var l := to.length()
 				if l > 1e-6:
 					_try_move(state, s, to / l * minf(speed, l))
+			elif not _wander_target(state, s).is_empty():
+				# v1.2: wander co muc tieu (den yeu, else den tat) -> di toi den
+				var tg: Dictionary = s["_tg"]
+				s["target_lantern_id"] = str(tg["id"])
+				var to2: Vector2 = _flat(tg["pos"]) - _flat(s["pos"])
+				var l2 := to2.length()
+				var wspd := speed * WANDER_SPEED_FACTOR
+				if l2 > GameConfig.DRAIN_RANGE_M:
+					_try_move(state, s, to2 / l2 * minf(wspd, l2 - GameConfig.DRAIN_RANGE_M * 0.5))
+				if SimState.is_low_fuel(tg) and _flat(s["pos"]).distance_to(_flat(tg["pos"])) <= GameConfig.DRAIN_RANGE_M + 1e-4:
+					s["state"] = "drain"
+					s["drain_ticks"] = 0
 			else:
+				s["target_lantern_id"] = ""
 				if int(s.get("wander_ticks", 0)) <= 0:
 					var a := state.rng_shade.next_float() * TAU
 					s["wander_dir"] = Vector2(cos(a), sin(a))

@@ -5,3 +5,6 @@ Files: `s05_deposit_lights.scenario.json`, `s05_deposit_lights.inputs.json`. Quy
 Setup: carried 8, L1 deposited 2 at (0,0,2), interact tick 0; ticks 30.
 
 Expected: amount=min(8,10-2)=8 => deposited 10. Tick 1: `deposit {L1,8,10}` roi `lantern_lit {L1}` (thu tu D5). Score +100. Chi 1/5 den sang nen chua thang. End: playing, 30, 100.
+
+## P3 (contract v1.2) - dap an moi
+TICKET-03 muc 5 + 7: score = 8*5 + 100 (thap lan dau) = 140; `lantern_lit` them `relight:false`.

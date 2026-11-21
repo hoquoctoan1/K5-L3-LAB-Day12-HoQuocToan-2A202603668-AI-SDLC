@@ -14,7 +14,17 @@ func _names(ev: Array) -> Array:
 	return r
 
 func _lan(id: String, pos: Vector3, dep := 0) -> Dictionary:
-	return {"id": id, "pos": pos, "lit": false, "deposited": dep}
+	var l := SimState.make_lantern(id, pos)
+	l["deposited"] = dep
+	return l
+
+## Den dang sang, day dau (v1.2: den sang day dau khong nhan mote -> hanh vi "bo qua den sang" cua v1.1).
+func _lit(id: String, pos: Vector3) -> Dictionary:
+	var l := _lan(id, pos)
+	l["lit"] = true
+	l["ever_lit"] = true
+	l["fuel_units"] = GameConfig.FUEL_MAX_UNITS
+	return l
 
 func run(t: TS) -> void:
 	var R := GameConfig.PICKUP_RADIUS
@@ -25,7 +35,8 @@ func run(t: TS) -> void:
 	MoteSystem.step(s, {}, ev)
 	t.eq(s.player["carried"], 1, "dung ban kinh -> nhat (|dy| <= PICKUP_MAX_DY; Phase 1 bo qua Y)")
 	t.eq(s.motes.size(), 1, "mote ngoai ban kinh con lai")
-	t.eq(s.score, GameConfig.SCORE_PER_MOTE, "diem mote")
+	# P3 regression: v1.1 cong +10 khi NHAT; TICKET-03 muc 5 THAY THE -> chi cong khi nap (xem p3-regression-changes.md)
+	t.eq(s.score, 0, "v1.2: nhat mote khong cong diem")
 	t.eq(_names(ev), ["mote_picked"], "event mote_picked 1 lan")
 	t.eq(ev[0]["data"]["carried"], 1, "data carried")
 	# day
@@ -70,14 +81,15 @@ func run(t: TS) -> void:
 	LanternSystem.step(s, {"interact": true}, ev)
 	t.ok(s.lanterns[0]["lit"], "sang den")
 	t.eq(s.player["carried"], 2, "du C-3 -> con 2")
-	t.eq(s.score, GameConfig.SCORE_PER_LANTERN, "diem lantern")
+	t.eq(s.score, GameConfig.SCORE_PER_LANTERN + GameConfig.SCORE_PER_MOTE * C, "diem lantern + 5/mote nap (v1.2)")
 	t.eq(_names(ev), ["deposit", "lantern_lit"], "thu tu deposit, lantern_lit")
 	t.eq(ev[0]["data"]["amount"], C - 3, "amount=C-3")
-	# da sang -> bo qua, khong lit lan 2
+	# da sang + day dau (fuel 100) -> bo qua, khong lit lan 2 (v1.2: den day dau khong duoc chon)
+	t.eq(int(s.lanterns[0]["fuel_units"]), GameConfig.FUEL_MAX_UNITS, "vua thap -> fuel 100")
 	ev = []
 	LanternSystem.step(s, {"interact": true}, ev)
-	t.eq(ev.size(), 0, "den sang bi bo qua")
-	t.eq(s.score, GameConfig.SCORE_PER_LANTERN, "diem khong cong lai")
+	t.eq(ev.size(), 0, "den sang day dau bi bo qua")
+	t.eq(s.score, GameConfig.SCORE_PER_LANTERN + GameConfig.SCORE_PER_MOTE * C, "diem khong cong lai")
 	t.eq(s.player["carried"], 2, "carried giu nguyen")
 	# khong interact / khong carried
 	s = _st()
@@ -106,12 +118,11 @@ func run(t: TS) -> void:
 	# gan nhat, bo qua den sang
 	s = _st()
 	s.player["carried"] = 1
-	var lit := _lan("L1", Vector3(0.5, 0, 0))
-	lit["lit"] = true
+	var lit := _lit("L1", Vector3(0.5, 0, 0))
 	s.lanterns = [lit, _lan("L2", Vector3(2, 0, 0)), _lan("L3", Vector3(1, 0, 0))]
 	ev = []
 	LanternSystem.step(s, {"interact": true}, ev)
-	t.eq(ev[0]["data"]["lantern_id"], "L3", "gan nhat chua sang")
+	t.eq(ev[0]["data"]["lantern_id"], "L3", "gan nhat nhan duoc (bo qua den day dau)")
 	_run_p2(t)
 
 func _run_p2(t: TS) -> void:
@@ -187,8 +198,7 @@ func _run_p2(t: TS) -> void:
 	# safe zone: shade trong vung den vua sang bi day ra <=30 tick, khong sat thuong (safe_push_ticks>0)
 	s = _st()
 	s.player["pos"] = Vector3(40, 0, 40)
-	var lt := _lan("L1", Vector3.ZERO)
-	lt["lit"] = true
+	var lt := _lit("L1", Vector3.ZERO)
 	s.lanterns = [lt]
 	s.shades = [SimState.make_shade("S1", Vector3(2, 0, 0))]
 	var flagged := true

@@ -5,3 +5,6 @@ Files: `s02_pick_mote.scenario.json`, `s02_pick_mote.inputs.json`. Quy uoc tick:
 Setup: Mote (0,0,5.05); move [0,1] tu tick 0; ticks 60.
 
 Expected: z sau n buoc = 0.1n. Nhat khi 5.05-z <= 1.0 => z>=4.05 => n=41 (n=40: dist 1.05 > 1.0). Event `mote_picked {carried:1}` tick 41. Score 10 (Phase 1: cong khi NHAT; xem docs/notes/requests.md R1). Tick 60: z=6.0, carried 1, motes_active 0. End: playing, 60, 10.
+
+## P3 (contract v1.2) - dap an moi
+TICKET-03 muc 5 THAY THE diem khi nhat: nhat khong cong diem. End score 10 -> 0.

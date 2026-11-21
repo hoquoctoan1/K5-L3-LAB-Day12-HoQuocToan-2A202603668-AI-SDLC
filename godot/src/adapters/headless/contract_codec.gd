@@ -55,14 +55,16 @@ static func _ptk(p: Dictionary, key: String, legacy_s: String) -> String:
 		return fmt_num(float(p[legacy_s]))
 	return "0.0"
 
-## Snapshot v1.1 (thu tu key theo interfaces_v2.md muc 6, [ASSUMPTION] ve thu tu).
+## Snapshot v1.2 (thu tu key theo interfaces_v2.md muc 6 + 11, [ASSUMPTION] ve thu tu).
+## v1.2: lantern them fuel (1 chu so thap phan, den tat 0.0), ever_lit, relit_count; player them capacity.
 ## state = "paused" khi s.paused va status playing. ttl_s cua mote ttl_ticks<0 = -1.0.
 static func snapshot_line(s: SimState) -> String:
 	var p: Dictionary = s.player
 	var ls: PackedStringArray = []
 	for l in s.lanterns:
-		ls.append('{"id":%s,"pos":%s,"lit":%s,"deposited":%d}' % [
-			enc(l["id"]), vec(l["pos"]), enc(l["lit"]), int(l["deposited"])])
+		ls.append('{"id":%s,"pos":%s,"lit":%s,"deposited":%d,"fuel":%s,"ever_lit":%s,"relit_count":%d}' % [
+			enc(l["id"]), vec(l["pos"]), enc(l["lit"]), int(l["deposited"]),
+			fmt_num(SimState.fuel_out(l)), enc(bool(l.get("ever_lit", false))), int(l.get("relit_count", 0))])
 	var sh: PackedStringArray = []
 	for d in s.shades:
 		sh.append('{"id":%s,"pos":%s,"state":%s}' % [enc(d["id"]), vec(d["pos"]), enc(d["state"])])
@@ -85,11 +87,11 @@ static func snapshot_line(s: SimState) -> String:
 	var head: String = '{"type":"snapshot","tick":%d,"sim_tick":%d,"state":%s,"time_left_s":%s,"score":%d,"night":%d,"wind":{"active":%s,"dir_deg":%s},' % [
 		s.tick, s.steps, enc(st_name), fmt_num(s.time_left_s()), s.score, s.night,
 		enc(bool(w.get("active", false))), fmt_num(float(w.get("dir_deg", 0.0)))]
-	var pl: String = '"player":{"pos":%s,"vel":%s,"grounded":%s,"invuln":%s,"dash_cd_s":%s,"pulse_cd_s":%s,"charm_s":%s,"flames":%d,"carried":%d},' % [
+	var pl: String = '"player":{"pos":%s,"vel":%s,"grounded":%s,"invuln":%s,"dash_cd_s":%s,"pulse_cd_s":%s,"charm_s":%s,"flames":%d,"carried":%d,"capacity":%d},' % [
 		vec(p["pos"]), vec(p.get("vel", Vector3.ZERO)), enc(bool(p.get("grounded", true))),
 		_ptk(p, "invuln_ticks", "invuln_left"), _secs(p.get("dash_cd_ticks", 0)),
 		_ptk(p, "pulse_cd_ticks", "pulse_cd_left"), _secs(p.get("charm_ticks", 0)),
-		int(p["flames"]), int(p["carried"])]
+		int(p["flames"]), int(p["carried"]), SimState.capacity_of(p)]
 	var tail: String = '"lanterns":[%s],"shades":[%s],"motes_active":%d,"motes":[%s],"drifters":[%s],"charms":[%s]}' % [
 		",".join(ls), ",".join(sh), s.motes.size(), ",".join(mo), ",".join(dr), ",".join(ch)]
 	return head + pl + tail

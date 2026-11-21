@@ -2,10 +2,13 @@ extends RefCounted
 ## Validate + ap scenario (contract muc D) len SimState. Khong phat event, khong cong diem.
 ## Quy uoc: motes ids "m<next_mote_id>.." ; shades khong id -> "S<next_shade_id>.." (id "S<n>" tuong minh
 ## nang next_shade_id len n+1); shade mac dinh state "chase", stun_left 0.
+## v1.2 (P3-B4): lantern `lit, fuel (0..100), ever_lit`; `lit:true` thieu `fuel` -> 100; thieu `ever_lit` -> = lit
+##   [GIA DINH Q5]; den tat -> fuel 0. player `successful_lights`; shades[] `target_lantern_id` (id den ton tai,
+##   hoac ""), state `drain`. Den dat san KHONG tinh vao successful_lights.
 
-const SHADE_STATES := ["spawning", "wander", "chase", "recoil", "stunned"]
+const SHADE_STATES := ["spawning", "wander", "chase", "recoil", "stunned", "drain"]
 const DRIFTER_STATES := ["idle", "chase", "flee", "removed"]
-const PLAYER_TICK_KEYS := ["invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks"]
+const PLAYER_TICK_KEYS := ["invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks", "successful_lights"]
 
 static func _nonneg_int(v) -> bool:
 	return _is_int(v) and v >= 0
@@ -23,6 +26,12 @@ static func _vec3(v) -> Variant:
 		if not _is_num(x):
 			return null
 	return Vector3(float(v[0]), float(v[1]), float(v[2]))
+
+static func _has_lantern(state: SimState, id: String) -> bool:
+	for sl in state.lanterns:
+		if sl["id"] == id:
+			return true
+	return false
 
 static func validate(state: SimState, d) -> String:
 	if typeof(d) != TYPE_DICTIONARY:
@@ -89,6 +98,11 @@ static func validate(state: SimState, d) -> String:
 				return "shade.state khong hop le: " + s["state"]
 			if s.has("state_ticks_left") and not _nonneg_int(s["state_ticks_left"]):
 				return "shade.state_ticks_left phai la so nguyen >= 0"
+			if s.has("target_lantern_id"):
+				if typeof(s["target_lantern_id"]) != TYPE_STRING:
+					return "shade.target_lantern_id phai la chuoi"
+				if s["target_lantern_id"] != "" and not _has_lantern(state, s["target_lantern_id"]):
+					return "shade.target_lantern_id khong ton tai: " + s["target_lantern_id"]
 	if d.has("lanterns"):
 		if typeof(d["lanterns"]) != TYPE_ARRAY:
 			return "lanterns phai la mang"
@@ -107,6 +121,10 @@ static func validate(state: SimState, d) -> String:
 				return "lantern.deposited phai la so nguyen >= 0"
 			if l.has("lit") and typeof(l["lit"]) != TYPE_BOOL:
 				return "lantern.lit phai la bool"
+			if l.has("ever_lit") and typeof(l["ever_lit"]) != TYPE_BOOL:
+				return "lantern.ever_lit phai la bool"
+			if l.has("fuel") and not (_is_num(l["fuel"]) and l["fuel"] >= 0 and l["fuel"] <= GameConfig.FUEL_MAX):
+				return "lantern.fuel phai la so trong [0, 100]"
 	if d.has("time_left_s") and not (_is_num(d["time_left_s"]) and d["time_left_s"] >= 0):
 		return "time_left_s phai la so >= 0"
 	return ""
@@ -184,6 +202,7 @@ static func apply(state: SimState, d) -> Dictionary:
 				state.next_shade_id += 1
 			var sd := SimState.make_shade(id, _vec3(s["pos"]), s.get("state", "chase"))
 			sd["state_ticks_left"] = int(s.get("state_ticks_left", 0))
+			sd["target_lantern_id"] = str(s.get("target_lantern_id", ""))
 			state.shades.append(sd)
 	if d.has("lanterns"):
 		for l in d["lanterns"]:
@@ -195,6 +214,16 @@ static func apply(state: SimState, d) -> Dictionary:
 						sl["deposited"] = int(l["deposited"])
 					if l.has("lit"):
 						sl["lit"] = l["lit"]
+						sl["ever_lit"] = bool(l.get("ever_lit", l["lit"]))
+					elif l.has("ever_lit"):
+						sl["ever_lit"] = bool(l["ever_lit"])
+					if sl["lit"]:
+						if l.has("fuel"):
+							sl["fuel_units"] = int(round(float(l["fuel"]) * float(GameConfig.FUEL_UNITS_PER_FUEL)))
+						elif l.has("lit"):
+							sl["fuel_units"] = GameConfig.FUEL_MAX_UNITS
+					else:
+						sl["fuel_units"] = 0
 	if d.has("time_left_s"):
 		state.time_left_initial = float(d["time_left_s"])
 	return {"ok": true, "error": ""}

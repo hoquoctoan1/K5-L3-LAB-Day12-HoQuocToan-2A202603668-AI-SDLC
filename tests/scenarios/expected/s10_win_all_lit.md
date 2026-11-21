@@ -5,3 +5,6 @@ Files: `s10_win_all_lit.scenario.json`, `s10_win_all_lit.inputs.json`. Quy uoc t
 Setup: L2..L5 lit:true (khong diem), L1 (0,0,2) deposited 0; carried 9, mote (0,0,0.5); time_left 100; interact tick 0.
 
 Expected: Tick 1 theo thu tu: `mote_picked {10}` (+10, Phase 1 cong khi nhat; xem requests.md R1), `deposit {L1,10,10}`, `lantern_lit {L1}` (+100), `game_over {won, all_lit}`. Thang: remaining_ticks=6000-1=5999, secs=floor(5999/60)=99. Score = 10+100+50*3+2*99 = 458. L2..L5 dat san khong +100. End: won, 1, 458.
+
+## P3 (contract v1.2) - dap an moi
+TICKET-03 muc 3 THAY THE 'thang ngay khi moi den sang': khong con game_over o tick 1. Kiem: mote_picked {10} (0 diem), deposit {L1,10,10} (+50), lantern_lit {L1, relight:false} (+100); end playing, 600, 150. L2..L5 dat san lit (fuel mac dinh 100) hao 1 unit/tick tu tick 1: sau 600 tick = 100 - 10 = 90.0. L1 thap tick 1 (fuel 100), hao tu tick 2: 100 - 599/60 = 90.017 -> 90.0. Ten file giu nguyen de lich su git lien tuc; y nghia moi: 'thap du den KHONG thang som'.

@@ -1,5 +1,7 @@
 extends RefCounted
-## LifecycleSystem v2: state.steps = so tick da hoan tat (Sim tang o buoc 2 truoc khi goi lifecycle).
+## LifecycleSystem v3 (contract v1.2, TICKET-03 muc 3 + 5). state.steps = so tick da hoan tat.
+## P3 regression: cac kiem tra all_lit / thang som / thuong giay cua v1.1 da bi THAY THE va duoc viet lai o day
+## (ly do: docs/notes/p3-regression-changes.md).
 const LifecycleSystem = preload("res://src/core/systems/lifecycle_system.gd")
 
 func _mk(steps: int = 0, tl: float = -1.0, night: int = 1) -> SimState:
@@ -12,12 +14,15 @@ func _mk(steps: int = 0, tl: float = -1.0, night: int = 1) -> SimState:
 		s.lanterns.append(SimState.make_lantern("L%d" % (i + 1), Vector3.ZERO))
 	return s
 
-func _light(s: SimState, n: int = -1) -> void:
+## Thap n den dau tien (n < 0: tat ca) voi fuel_units cho truoc.
+func _light(s: SimState, n: int = -1, units: int = GameConfig.FUEL_MAX_UNITS) -> void:
 	var k := 0
 	for l in s.lanterns:
 		if n >= 0 and k >= n:
 			break
 		l["lit"] = true
+		l["ever_lit"] = true
+		l["fuel_units"] = units
 		k += 1
 
 func _overs(ev: Array) -> int:
@@ -28,50 +33,70 @@ func _overs(ev: Array) -> int:
 	return n
 
 func run(t: TS) -> void:
-	# tong tick moi Dem tu GameConfig
+	# tong tick moi Dem (v1.2: 240/270/300 s)
 	for n in [1, 2, 3]:
 		var sn := _mk(0, -1.0, n)
 		t.eq(LifecycleSystem.ticks_total(sn), GameConfig.night_duration_ticks(n), "ticks_total night %d" % n)
-	t.eq(GameConfig.night_duration_ticks(1), 18000, "18000")
-	t.eq(GameConfig.night_duration_ticks(2), 19800, "19800")
-	t.eq(GameConfig.night_duration_ticks(3), 21600, "21600")
+	t.eq(GameConfig.night_duration_ticks(1), 14400, "14400")
+	t.eq(GameConfig.night_duration_ticks(2), 16200, "16200")
+	t.eq(GameConfig.night_duration_ticks(3), 18000, "18000")
 
-	# thang + bonus 1 lan: steps 61 => con 18000-61 tick => floor(298.98) = 298 giay
+	# khong con thang som: Dem 1 thap du 5/5 o tick 61 -> van playing
 	var s := _mk(61)
 	_light(s)
-	s.player["flames"] = 2
 	var ev := []
 	LifecycleSystem.step(s, {}, ev)
-	var secs := int(floor(float(GameConfig.night_duration_ticks(1) - 61) / 60.0))
-	var want := GameConfig.SCORE_PER_FLAME_LEFT * 2 + GameConfig.SCORE_PER_SECOND_LEFT * secs
-	t.eq(secs, 298, "giay con lai")
-	t.eq(want, 2 * 298 + 100, "bonus = floor(giay)*2 + 50*flames")
-	t.eq(s.status, "won", "won")
-	t.eq(s.loss_reason, "", "no loss_reason")
-	t.eq(s.score, want, "bonus tu config")
+	t.eq(s.status, "playing", "thap du den truoc binh minh: KHONG ket thuc")
+	t.eq(ev.size(), 0, "khong game_over som")
+
+	# Dem 1 binh minh: 3/5 sang -> thang dawn_survived + thuong
+	s = _mk(14400)
+	_light(s, 3, 1234)           # floor(1234/60) = 20
+	s.player["flames"] = 2
+	ev = []
+	LifecycleSystem.step(s, {}, ev)
+	t.eq(s.status, "won", "Dem 1 3/5 -> won")
+	t.eq(s.loss_reason, "", "won: khong loss_reason")
 	t.eq(ev.size(), 1, "1 event")
-	t.eq(ev[0]["data"], {"result": "won", "reason": "all_lit"}, "event won")
+	t.eq(ev[0]["data"], {"result": "won", "reason": "dawn_survived"}, "event dawn_survived")
+	var want := 3 * (50 + 20) + 50 * 2
+	t.eq(LifecycleSystem.win_bonus(s), want, "bonus = sum(50 + floor(fuel)) + 50*flames")
+	t.eq(s.score, want, "diem thuong binh minh")
 	LifecycleSystem.step(s, {}, ev)
 	t.eq(s.score, want, "bonus khong lap")
 	t.eq(_overs(ev), 1, "khong game_over lan 2")
 
-	# Dem 2: 6 den; 5 sang chua thang (khong dung LANTERN_COUNT_NIGHT1)
-	s = _mk(10, -1.0, 2)
-	_light(s, 5)
+	# Dem 1 binh minh: 2/5 -> thua dawn
+	s = _mk(14400)
+	_light(s, 2)
 	ev = []
 	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "playing", "night2: 5/6 den chua thang")
-	_light(s)
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "won", "night2: 6/6 thang")
-	t.eq(s.score, GameConfig.SCORE_PER_SECOND_LEFT * int(floor((19800.0 - 10.0) / 60.0)) + GameConfig.SCORE_PER_FLAME_LEFT * 3, "night2 bonus")
-	s = _mk(10, -1.0, 3)
-	_light(s, 6)
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "playing", "night3: 6/7 den chua thang")
+	t.eq(s.status, "lost", "Dem 1 2/5 -> lost")
+	t.eq(s.loss_reason, "dawn", "reason dawn")
+	t.eq(ev[0]["data"], {"result": "lost", "reason": "dawn"}, "event dawn")
+	t.eq(s.score, 0, "thua: khong thuong")
 
-	# no_flames
+	# nguong tung Dem: 4/6 (Dem 2), 5/7 (Dem 3); thieu 1 thi thua
+	for c in [[2, 4], [3, 5]]:
+		var night: int = c[0]
+		var need: int = c[1]
+		s = _mk(GameConfig.night_duration_ticks(night), -1.0, night)
+		_light(s, need - 1)
+		LifecycleSystem.step(s, {}, [])
+		t.eq(s.loss_reason, "dawn", "Dem %d: %d den -> dawn" % [night, need - 1])
+		s = _mk(GameConfig.night_duration_ticks(night), -1.0, night)
+		_light(s, need)
+		LifecycleSystem.step(s, {}, [])
+		t.eq(s.status, "won", "Dem %d: %d den -> won" % [night, need])
+
+	# fuel 100 -> floor 100: 1 den day + 3 lua: 150 + 150
+	s = _mk(14400)
+	_light(s, 3)
+	s.player["flames"] = 3
+	LifecycleSystem.step(s, {}, [])
+	t.eq(s.score, 3 * 150 + 150, "3 den day dau, 3 lua")
+
+	# no_flames (giua Dem)
 	s = _mk(1)
 	s.player["flames"] = 0
 	ev = []
@@ -79,6 +104,16 @@ func run(t: TS) -> void:
 	t.eq(s.status, "lost", "no_flames lost")
 	t.eq(s.loss_reason, "no_flames", "no_flames reason")
 	t.eq(ev[0]["data"], {"result": "lost", "reason": "no_flames"}, "event no_flames")
+
+	# no_flames o tick binh minh du den -> no_flames (luon uu tien)
+	s = _mk(14400)
+	_light(s)
+	s.player["flames"] = 0
+	ev = []
+	LifecycleSystem.step(s, {}, ev)
+	t.eq(s.loss_reason, "no_flames", "no_flames > dawn_survived o tick cuoi")
+	t.eq(s.score, 0, "khong bonus khi thua")
+	t.eq(_overs(ev), 1, "1 game_over")
 
 	# dawn dung tick: time 1s => 60 tick
 	s = _mk(59, 1.0)
@@ -89,62 +124,31 @@ func run(t: TS) -> void:
 	s.steps = 60
 	t.eq(LifecycleSystem.ticks_left(s), 0, "het tick")
 	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "lost", "dawn o step 60")
-	t.eq(s.loss_reason, "dawn", "dawn reason")
-	t.eq(ev[0]["data"], {"result": "lost", "reason": "dawn"}, "event dawn")
+	t.eq(s.loss_reason, "dawn", "dawn o step 60")
 
-	# dawn mac dinh Dem 3 dung tick 21600
-	s = _mk(21599, -1.0, 3)
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "playing", "night3 tick 21599 playing")
-	s.steps = 21600
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.loss_reason, "dawn", "night3 dawn tai 21600")
+	# Dem 3 binh minh dung tick 18000
+	s = _mk(17999, -1.0, 3)
+	LifecycleSystem.step(s, {}, [])
+	t.eq(s.status, "playing", "night3 tick 17999 playing")
+	s.steps = 18000
+	LifecycleSystem.step(s, {}, [])
+	t.eq(s.loss_reason, "dawn", "night3 dawn tai 18000")
 
-	# thang dung tick het gio => won, bonus giay = 0
+	# khong co den: khong the thang
 	s = _mk(60, 1.0)
-	_light(s)
-	s.player["flames"] = 3
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "won", "all_lit > dawn (cung tick)")
-	t.eq(s.score, GameConfig.SCORE_PER_FLAME_LEFT * 3, "giay 0 => chi bonus lua")
-	t.eq(_overs(ev), 1, "1 game_over")
+	s.lanterns = []
+	LifecycleSystem.step(s, {}, [])
+	t.eq(s.loss_reason, "dawn", "0 den -> dawn")
 
-	# het lua va moi den sang cung tick => no_flames (luon uu tien, ticket v1.1)
-	s = _mk(30, 1.0)
-	_light(s)
-	s.player["flames"] = 0
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.status, "lost", "no_flames > all_lit")
-	t.eq(s.loss_reason, "no_flames", "reason no_flames")
-	t.eq(s.score, 0, "khong bonus khi thua")
-	t.eq(_overs(ev), 1, "1 game_over")
-
-	# no_flames + dawn => no_flames
-	s = _mk(60, 1.0)
-	s.player["flames"] = 0
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(s.loss_reason, "no_flames", "no_flames uu tien hon dawn")
-
-	# terminal: khong lap
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
-	t.eq(ev.size(), 0, "khong event sau terminal")
-	s = _mk()
+	# terminal / paused
+	s = _mk(14400)
 	s.status = "won"
 	_light(s)
 	ev = []
 	LifecycleSystem.step(s, {}, ev)
 	t.eq(s.score, 0, "won roi khong cong them")
 	t.eq(ev.size(), 0, "won roi khong event")
-
-	# paused: khong xet
 	s = _mk(60, 1.0)
 	s.paused = true
-	ev = []
-	LifecycleSystem.step(s, {}, ev)
+	LifecycleSystem.step(s, {}, [])
 	t.eq(s.status, "playing", "paused: khong xet thang/thua")

@@ -5,3 +5,6 @@ Files: `s17_win_beats_dawn.scenario.json`, `s17_win_beats_dawn.inputs.json`. Quy
 Setup: time_left_s 1/60 (1 tick), L2..L5 lit, L1 (0,0,2), carried 10, interact tick 0.
 
 Expected: Tick 1: deposit {L1,10,10}, lantern_lit, game_over {won, all_lit} (thang uu tien hon dawn du remaining=0). Score = 100 + 50*3 + 2*floor(0)=250. End: won, 1, 250.
+
+## P3 (contract v1.2) - dap an moi
+TICKET-03 muc 3 + 5: tick 1 la tick binh minh; 5/5 den sang >= 3 -> won/dawn_survived. Buoc 2b tru 1 unit cho L2..L5 (5999 units = 99.98 -> floor 99); L1 thap buoc 5 (6000 -> 100). Score = 10*5 + 100 + 4*(50+99) + (50+100) + 50*3 = 1046.

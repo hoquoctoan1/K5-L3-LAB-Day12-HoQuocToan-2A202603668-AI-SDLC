@@ -8,8 +8,8 @@ extends RefCounted
 ##     vi tri tren vong ban kinh 1.5..2.5 quanh center (XZ, y = center.y), dung state.rng_mote (tat dinh).
 ##   - them vao state.motes, tra ve mang mote moi. Mote co "born_tick"=state.tick: khong nhat duoc trong
 ##     chinh tick do (chi tu tick sau).
-## ASSUMPTION: diem +SCORE_PER_MOTE cong luc NHAT (giu Phase 1; snapshot mau contract v1.0 co score 20,
-##   carried 2, deposited 0). interfaces_v2.md muc 10 (P6: cong luc nap) KHONG ap dung o day.
+## v1.2 (P3-B3, TICKET-03 muc 4-5): nhat KHONG cong diem (diem +5 cong luc nap, lantern_system);
+##   suc chua = SimState.capacity_of(player) = min(20, 10 + 2 * successful_lights).
 
 const DROP_RING_MIN: float = 1.5
 const DROP_RING_MAX: float = 2.5
@@ -45,12 +45,11 @@ static func step(state: SimState, _input: Dictionary, events: Array) -> void:
 		return
 	var kept: Array = []
 	for m in state.motes:
-		if int(p["carried"]) < GameConfig.CARRY_CAPACITY and int(m.get("born_tick", -1)) != state.tick:
+		if int(p["carried"]) < SimState.capacity_of(p) and int(m.get("born_tick", -1)) != state.tick:
 			var dxz := Vector2(m["pos"].x - p["pos"].x, m["pos"].z - p["pos"].z).length()
 			var dy: float = absf(m["pos"].y - p["pos"].y)
 			if dxz <= GameConfig.PICKUP_RADIUS + 1e-4 and dy <= GameConfig.PICKUP_MAX_DY + 1e-4:
 				p["carried"] = int(p["carried"]) + 1
-				state.score += GameConfig.SCORE_PER_MOTE
 				events.append({"name": "mote_picked", "data": {"carried": p["carried"]}})
 				continue
 		kept.append(m)

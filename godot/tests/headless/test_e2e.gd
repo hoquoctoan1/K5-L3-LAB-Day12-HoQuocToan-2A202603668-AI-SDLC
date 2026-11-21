@@ -136,7 +136,7 @@ func _pause(t: TS) -> void:
 	var s20 := _snap(rows, 20)
 	t.eq(s20["state"], "paused", "snapshot paused")
 	t.eq(int(s20["sim_tick"]), 10, "sim_tick dung o 10")
-	t.near(float(s20["time_left_s"]), 300.0 - 10.0 / 60.0, "time dung")
+	t.near(float(s20["time_left_s"]), 240.0 - 10.0 / 60.0, "time dung (v1.2: Dem 1 = 240 s)")
 	t.eq(_snap(rows, 40)["player"]["pos"], s20["player"]["pos"], "khong di chuyen khi paused")
 	var s100 := _snap(rows, 100)
 	t.eq(s100["state"], "playing", "playing lai")
@@ -202,12 +202,12 @@ func _jump_pad(t: TS) -> void:
 	t.ok(_snap(rows, 150)["player"]["grounded"], "grounded")
 	t.eq(_snap(rows, 150)["player"]["vel"], [0.0, 0.0, 0.0], "dung lai sau khi dap")
 
-## Dem 3 day du 21600 tick (shade toi da 10, gio, drifter): <= 30 s.
+## Dem 3 day du 18000 tick (v1.2: 300 s; v1.1 la 21600) (shade toi da 10, gio, drifter): <= 30 s.
 func _night3_full(t: TS) -> void:
 	var t0 := Time.get_ticks_msec()
 	var lines := _run(1, {"player": {"flames": 1000}}, {}, GameConfig.night_duration_ticks(3), 10, 3)
 	var ms := Time.get_ticks_msec() - t0
-	print("e2e night3 21600 ticks in-process: %d ms" % ms)
-	t.eq(lines[lines.size() - 1], '{"type":"end","ticks":21600,"state":"lost","score":0}', "Dem 3 het gio o 21600")
-	t.ok(_txt(lines).contains('"tick":21600,"name":"game_over","data":{"result":"lost","reason":"dawn"}'), "dawn tick 21600")
-	t.ok(ms <= 30000, "21600 tick <= 30 s (%d ms)" % ms)
+	print("e2e night3 18000 ticks in-process: %d ms" % ms)
+	t.eq(lines[lines.size() - 1], '{"type":"end","ticks":18000,"state":"lost","score":0}', "Dem 3 het gio o 18000")
+	t.ok(_txt(lines).contains('"tick":18000,"name":"game_over","data":{"result":"lost","reason":"dawn"}'), "dawn tick 18000")
+	t.ok(ms <= 30000, "18000 tick <= 30 s (%d ms)" % ms)

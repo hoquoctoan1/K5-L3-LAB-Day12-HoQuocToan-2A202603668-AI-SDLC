@@ -84,7 +84,6 @@ const SCORE_PER_STUN: int = 5             # moi Bong Muc trung Toa Sang
 const SCORE_PER_STUN_DRAIN: int = 15      # tong diem neu con do dang drain ngay truoc khi trung
 const SCORE_PER_LIT_LANTERN_DAWN: int = 50   # chi khi thang: moi den dang sang +50 + floor(fuel)
 const SCORE_PER_FLAME_LEFT: int = 50      # chi khi thang
-const SCORE_PER_SECOND_LEFT: int = 0      # LEGACY: thuong thoi gian da BO o v1.2; lifecycle (P3-B3) xoa cho dung
 
 # --- hang so noi bo (khong thuoc contract) ---
 const ISLAND_RADIUS_NIGHT1: float = 40.0

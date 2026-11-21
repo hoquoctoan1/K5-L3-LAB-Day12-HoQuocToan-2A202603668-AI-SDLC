@@ -259,8 +259,10 @@ elif name == "h03_dropped_ttl":
     chk(S(500)["player"]["flames"] == 2, "flames")
 # ---------------- motes / lanterns ----------------
 elif name == "m01_capacity":
+    # P3 (v1.2): nhat khong cong diem (TICKET-03 muc 5) -> 10 thanh 0; capacity snapshot = 10 (0 lan thap)
     chk(names() == [(1, "mote_picked")] and ev("mote_picked")[0]["data"] == {"carried": 10}, "events %s" % names())
-    final("playing", 30, 10)
+    final("playing", 30, 0)
+    chk(S(30)["player"]["capacity"] == 10, "capacity 10")
     chk(S(30)["player"]["carried"] == 10 and S(30)["motes_active"] == 1, "state")
 elif name == "m02_respawn":
     chk(names() == [], "events %s" % names())
@@ -273,12 +275,13 @@ elif name == "m02_respawn":
 elif name == "l01_partial_fill":
     chk(names() == [(1, "deposit")] and ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 4, "deposited": 7}, "events %s" % names())
     chk(lant(30, "L1")["deposited"] == 7 and lant(30, "L1")["lit"] is False and S(30)["player"]["carried"] == 0, "state")
-    final("playing", 30, 0)
+    final("playing", 30, 20)   # P3 (v1.2): +5 moi mote nap (4 mote)
 elif name == "l02_complete_fill":
     chk(names() == [(1, "deposit"), (1, "lantern_lit")], "events %s" % names())
     chk(ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 3, "deposited": 10}, "deposit data")
     chk(S(30)["player"]["carried"] == 4 and lant(30, "L1")["lit"] is True, "state")
-    final("playing", 30, 100)
+    final("playing", 30, 115)  # P3 (v1.2): 3*5 + 100
+    chk(ev("lantern_lit")[0]["data"] == {"lantern_id": "L1", "relight": False}, "lit relight false")
 elif name == "l03_out_of_range":
     chk(names() == [], "events %s" % names())
     chk(S(30)["player"]["carried"] == 3 and lant(30, "L1")["deposited"] == 0, "state")
@@ -404,28 +407,28 @@ elif name == "pa01_pause":
     chk(names(False) == [(1, "night_start"), (6, "paused"), (21, "resumed")], "events %s" % names(False))
     for t in range(6, 21):
         s = S(t)
-        chk(s["state"] == "paused" and s["sim_tick"] == 5 and near(s["player"]["pos"][2], 0.5) and near(s["time_left_s"], 300 - 5 / 60, 0.001), "paused tick %d %s" % (t, (s["state"], s["sim_tick"], s["player"]["pos"])))
+        chk(s["state"] == "paused" and s["sim_tick"] == 5 and near(s["player"]["pos"][2], 0.5) and near(s["time_left_s"], 240 - 5 / 60, 0.001), "paused tick %d %s" % (t, (s["state"], s["sim_tick"], s["player"]["pos"])))
     chk(S(5)["state"] == "playing" and S(21)["state"] == "playing", "state around")
     chk(S(21)["sim_tick"] == 6 and near(P(21)[2], 0.6), "tick 21 %s" % P(21))
-    chk(S(40)["sim_tick"] == 25 and near(P(40)[2], 2.5) and near(S(40)["time_left_s"], 300 - 25 / 60, 0.001), "tick 40")
+    chk(S(40)["sim_tick"] == 25 and near(P(40)[2], 2.5) and near(S(40)["time_left_s"], 240 - 25 / 60, 0.001), "tick 40")
     chk(S(40)["tick"] == 40, "tick field")
 # ---------------- nights / dawn / boundaries ----------------
 elif name in ("n01_night_start", "n02_night_start", "n03_night_start"):
     k = int(name[2])
     chk(names(False) == [(1, "night_start")] and ev("night_start")[0]["data"] == {"night": k}, "events %s" % names(False))
-    chk(S(0)["night"] == k and near(S(0)["time_left_s"], {1: 300.0, 2: 330.0, 3: 360.0}[k], 1e-3), "snapshot 0")
+    chk(S(0)["night"] == k and near(S(0)["time_left_s"], {1: 240.0, 2: 270.0, 3: 300.0}[k], 1e-3), "snapshot 0")
 elif name == "n04_charms_replace":
     chk(all(s["charms"] == [] for s in snaps.values()), "charms not replaced: %s" % S(0)["charms"])
 elif name in ("t01_dawn_n1", "t02_dawn_n2", "t03_dawn_n3"):
     k = int(name[2])
-    n = {1: 18000, 2: 19800, 3: 21600}[k]
+    n = {1: 14400, 2: 16200, 3: 18000}[k]   # P3 (v1.2): Dem 240/270/300 s
     chk(names() == [(n, "game_over")] and ev("game_over")[0]["data"] == {"result": "lost", "reason": "dawn"}, "events %s" % names())
     final("lost", n, 0)
     chk(S(n)["state"] == "lost" and near(S(n)["time_left_s"], 0.0, 0.001), "last snapshot")
 elif name == "tb01_ticks0_n3":
     chk(len(rows) == 2 and rows[0]["type"] == "snapshot" and rows[0]["tick"] == 0 and rows[0]["night"] == 3, "rows")
     final("playing", 0, 0)
-    chk(near(S(0)["time_left_s"], 360.0, 1e-3), "time_left")
+    chk(near(S(0)["time_left_s"], 300.0, 1e-3), "time_left (v1.2: Dem 3 = 300 s)")
 elif name == "tb02_dawn_tick59":
     chk(names() == [], "events %s" % names())
     final("playing", 59, 0)
@@ -436,13 +439,15 @@ elif name == "tb03_dawn_tick60":
 elif name == "v01_win_beats_dawn_n2":
     chk(names() == [(60, "deposit"), (60, "lantern_lit"), (60, "game_over")], "events %s" % names())
     chk(ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 3, "deposited": 10}, "deposit")
-    chk(ev("game_over")[0]["data"] == {"result": "won", "reason": "all_lit"}, "game_over")
-    final("won", 60, 250)
+    # P3 (v1.2): tick 60 = binh minh, 6/6 sang >= 4 -> dawn_survived. 3*5 + 100 + 5*(50+99) + (50+100) + 50*3
+    chk(ev("game_over")[0]["data"] == {"result": "won", "reason": "dawn_survived"}, "game_over")
+    final("won", 60, 1160)
 elif name == "v02_win_bonus_n3":
-    chk(names() == [(1, "deposit"), (1, "lantern_lit"), (1, "game_over")], "events %s" % names())
+    # P3 (v1.2): thap du 7/7 KHONG thang som (TICKET-03 muc 3); 10*5 + 100
+    chk(names() == [(1, "deposit"), (1, "lantern_lit")], "events %s" % names())
     chk(ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 10, "deposited": 10}, "deposit")
-    chk(ev("game_over")[0]["data"] == {"result": "won", "reason": "all_lit"}, "game_over")
-    final("won", 1, 398)
+    chk(ev("lantern_lit")[0]["data"] == {"lantern_id": "L1", "relight": False}, "lit")
+    final("playing", 10, 150)
 elif name == "v03_nofl_beats_win":
     go = ev("game_over")
     chk(len(go) == 1 and go[0]["data"] == {"result": "lost", "reason": "no_flames"}, "game_over %s" % [e["data"] for e in go])

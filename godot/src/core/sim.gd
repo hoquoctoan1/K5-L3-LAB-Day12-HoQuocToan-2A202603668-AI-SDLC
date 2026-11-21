@@ -14,7 +14,7 @@ extends RefCounted
 ##  1  input: pause (canh len) xu ly truoc. Dang chay + pause -> paused=true, event paused, DUNG tai day.
 ##     Dang paused + pause -> paused=false, event resumed, chay tiep buoc 2..11 trong CUNG step.
 ##     Dang paused, khong pause -> dung. Khi dung: state.tick van +1; steps/thoi gian/bo dem/spawn/TTL/rng dung yen.
-##  2  bo dem: state.steps += 1 (thoi gian). Cac bo dem con lai do chinh system so huu giam (1 lan/tick):
+##  2  bo dem: state.steps += 1 (thoi gian). 2b (v1.2): LanternSystem.tick_fuel - hao dau + bi hut, den het dau tat. Cac bo dem con lai do chinh system so huu giam (1 lan/tick):
 ##       wind (WindSystem), player invuln/dash_cd/pulse_cd/charm/fall_wait/dash_ticks (PlayerSystem),
 ##       mote TTL (MoteSystem), charm respawn (CharmSystem), shade stun/recoil/spawning/knock/safe_push (ShadeSystem),
 ##       drifter flee/drop (DrifterSystem). CharmSystem.decrement_player_charm KHONG goi (PlayerSystem da giam).
@@ -27,7 +27,7 @@ extends RefCounted
 ##  8-9 DrifterSystem (di chuyen + CUOP, roi tu sinh drifter = buoc 10 cua no) -> ShadeSystem (di chuyen + HIT).
 ##     Tuong duong 8,8,9,9: di chuyen drifter/shade doc lap nhau; cuop xay ra truoc hit (ticket).
 ##  10 SpawnSystem (shade + mote theo lich). The moi chi tuong tac tu tick sau (shade "spawning", mote nhat o buoc 4).
-##  11 LifecycleSystem (no_flames > all_lit > dawn)
+##  11 LifecycleSystem v1.2 (no_flames > het gio: lit >= win_threshold -> dawn_survived, else dawn)
 ##  12 snapshot: viec cua headless_runner.
 
 const MapBuilder = preload("res://src/core/maps/map_builder.gd")
@@ -118,6 +118,8 @@ func step(frame: Dictionary) -> Array:
 		return _stamp(events)
 	# 2. thoi gian (cac bo dem khac: trong system so huu, xem dau file)
 	state.steps += 1
+	# 2b. dau den (v1.2): hao 1/s + Bong Muc drain 5/s moi con; fuel <= 0 -> lantern_out
+	LanternSys.tick_fuel(state, events)
 	# 3. di chuyen May
 	WindSys.step(state, frame, events)
 	PlayerSys.step(state, frame, events)

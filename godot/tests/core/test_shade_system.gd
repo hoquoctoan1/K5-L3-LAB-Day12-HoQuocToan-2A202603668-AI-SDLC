@@ -155,8 +155,8 @@ func run(t: TS) -> void:
 			t.near(s.shades[0]["pos"].x, 0.5, "dung yen: " + mode)
 	# vung an toan: khong bao gio vao
 	s = _mk()
-	s.lanterns.append({"id": "L1", "pos": Vector3(10, 0, 0), "lit": true, "deposited": 10, "safe_timer": 0})
-	s.lanterns.append({"id": "L2", "pos": Vector3(-10, 0, 0), "lit": false, "deposited": 0, "safe_timer": 0})
+	s.lanterns.append({"id": "L1", "pos": Vector3(10, 0, 0), "lit": true, "deposited": 10, "safe_timer": 0, "fuel_units": GameConfig.FUEL_MAX_UNITS, "ever_lit": true, "relit_count": 0})
+	s.lanterns.append({"id": "L2", "pos": Vector3(-10, 0, 0), "lit": false, "deposited": 0, "safe_timer": 0, "fuel_units": 0, "ever_lit": false, "relit_count": 0})
 	s.player["pos"] = Vector3(10, 0, 0)
 	s.shades.append(_sh("S1", Vector3(30, 0, 0)))
 	var bad := 0
@@ -167,7 +167,7 @@ func run(t: TS) -> void:
 	t.eq(bad, 0, "khong vao vung an toan")
 	# ben trong khi den sang: bi day ra <= 30 tick, khong sat thuong
 	s = _mk()
-	s.lanterns.append({"id": "L1", "pos": Vector3(10, 0, 0), "lit": true, "deposited": 10, "safe_timer": 0})
+	s.lanterns.append({"id": "L1", "pos": Vector3(10, 0, 0), "lit": true, "deposited": 10, "safe_timer": 0, "fuel_units": GameConfig.FUEL_MAX_UNITS, "ever_lit": true, "relit_count": 0})
 	s.player["pos"] = Vector3(11, 0, 0)
 	s.shades.append(_sh("S1", Vector3(11.5, 0, 0)))
 	ev = []
@@ -230,7 +230,7 @@ func run(t: TS) -> void:
 	s = _mk()
 	s.random_shades = true
 	s.map["shade_spawn_points"] = [Vector3(37, 0, 0)]
-	s.lanterns.append({"id": "L1", "pos": Vector3(35, 0, 0), "lit": true, "deposited": 10, "safe_timer": 0})
+	s.lanterns.append({"id": "L1", "pos": Vector3(35, 0, 0), "lit": true, "deposited": 10, "safe_timer": 0, "fuel_units": GameConfig.FUEL_MAX_UNITS, "ever_lit": true, "relit_count": 0})
 	s.player["pos"] = Vector3(-30, 0, 0)
 	for i in range(300):
 		Spawn.step(s, {}, [])

@@ -215,14 +215,16 @@ func _ordering(t: TS) -> void:
 	Loader.apply(mvs.state, {"random_motes": false, "random_shades": false, "motes": [[0, 0, 1.05]]})
 	ev = mvs.step(fr({"move": Vector2(0, 1)}))
 	t.eq(names(ev), ["mote_picked"], "di chuyen truoc nhat")
-	# buoc 5 truoc 11: thap den cuoi => thang cung tick
+	# P3 regression: v1.1 "thap den cuoi => thang cung tick" bi THAY THE (TICKET-03 muc 3: khong con thang som).
+	# v1.2: thap den cuoi chi phat deposit + lantern_lit, Dem van tiep tuc.
 	var w := SimC.new(1)
 	Loader.apply(w.state, {"player": {"carried": 10}, "random_motes": false, "random_shades": false,
 		"lanterns": [{"id": "L1", "pos": [0, 0, 1]}, {"id": "L2", "lit": true}, {"id": "L3", "lit": true}, {"id": "L4", "lit": true}, {"id": "L5", "lit": true}]})
 	ev = w.step(fr({"interact": true}))
-	t.eq(names(ev), ["deposit", "lantern_lit", "game_over"], "thang cung tick")
-	t.eq(w.state.score, GameConfig.SCORE_PER_LANTERN + GameConfig.SCORE_PER_SECOND_LEFT * int(floor((18000.0 - 1.0) / 60.0)) + GameConfig.SCORE_PER_FLAME_LEFT * 3, "diem thang")
-	t.eq(w.step(idle()), [], "het playing => []")
+	t.eq(names(ev), ["deposit", "lantern_lit"], "v1.2: thap du den KHONG ket thuc Dem")
+	t.eq(w.state.status, "playing", "van playing")
+	t.eq(w.state.score, GameConfig.SCORE_PER_LANTERN + GameConfig.SCORE_PER_MOTE * 10, "diem thap lan dau + 5/mote")
+	t.eq(find(ev, "lantern_lit")["data"], {"lantern_id": "L1", "relight": false}, "lantern_lit relight false")
 
 func _spawn_next_tick(t: TS) -> void:
 	# shade dau: 2 con tai tick 300, trang thai spawning (chua tuong tac)
@@ -309,14 +311,14 @@ func _time(t: TS) -> void:
 	t.eq(last[last.size() - 1]["name"], "game_over", "game_over event")
 	t.eq(e.step(idle()), [], "het playing => []")
 	t.eq(e.state.steps, 60, "steps dung")
-	# Dem 2 dawn mac dinh dung tick 19800 (khong shade/drifter de song sot)
+	# Dem 2 dawn mac dinh dung tick 16200 (v1.2: 270 s; khong shade/drifter de song sot)
 	var n2 := SimC.new(1, 2)
 	Loader.apply(n2.state, {"random_shades": false, "random_drifters": false})
 	var k := 0
 	var lastev: Array = []
-	while n2.state.status == "playing" and k < 20000:
+	while n2.state.status == "playing" and k < 17000:
 		lastev = n2.step(idle())
 		k += 1
-	t.eq(k, GameConfig.night_duration_ticks(2), "Dem 2 het gio o tick 19800")
+	t.eq(k, GameConfig.night_duration_ticks(2), "Dem 2 het gio o tick 16200")
 	t.eq(n2.state.loss_reason, "dawn", "Dem 2 dawn")
-	t.eq(lastev[lastev.size() - 1]["tick"], 19800, "game_over tick 19800")
+	t.eq(lastev[lastev.size() - 1]["tick"], 16200, "game_over tick 16200")

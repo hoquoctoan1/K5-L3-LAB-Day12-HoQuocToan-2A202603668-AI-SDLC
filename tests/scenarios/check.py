@@ -8,6 +8,8 @@ snaps = {r["tick"]: r for r in rows if r["type"] == "snapshot"}
 # v1.1: Sim phat them event night_start{night} o tick 1 (khong thuoc luat Phase 1 dang kiem) -> bo qua o day;
 # no duoc kiem rieng o tests/scenarios/p2 va test_sim.
 evs = [r for r in rows if r["type"] == "event" and r["name"] != "night_start"]
+# P3 (contract v1.2): s02/s04/s05/s10/s17 bi luat TICKET-03 THAY THE (diem, thang som, lantern_lit.relight);
+# dap an tinh lai BANG TAY, ly do o docs/notes/p3-regression-changes.md va expected/<name>.md.
 end = rows[-1]
 errs = []
 
@@ -44,7 +46,7 @@ if name == "s01_idle":
 elif name == "s02_pick_mote":
     chk(names() == [(41, "mote_picked")], "events %s" % names())
     chk(ev("mote_picked") and ev("mote_picked")[0]["data"] == {"carried": 1}, "data")
-    final("playing", 60, 10)
+    final("playing", 60, 0)   # v1.2: nhat khong cong diem
     s = snap(60)
     chk(s["player"]["carried"] == 1 and near(s["player"]["pos"][2], 6.0), "snap60 %s" % s["player"])
     chk(s["motes_active"] == 0, "motes_active")
@@ -56,15 +58,15 @@ elif name == "s03_full_no_pickup":
 elif name == "s04_deposit_partial":
     chk(names() == [(1, "deposit")], "events %s" % names())
     chk(ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 3, "deposited": 3}, "deposit data")
-    final("playing", 30, 0)
+    final("playing", 30, 15)  # v1.2: +5 moi mote nap (3 mote)
     s = snap(30)
     l1 = [l for l in s["lanterns"] if l["id"] == "L1"][0]
     chk(l1["deposited"] == 3 and l1["lit"] is False and s["player"]["carried"] == 0, "state")
 elif name == "s05_deposit_lights":
     chk(names() == [(1, "deposit"), (1, "lantern_lit")], "events %s" % names())
     chk(ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 8, "deposited": 10}, "deposit data")
-    chk(ev("lantern_lit")[0]["data"] == {"lantern_id": "L1"}, "lit data")
-    final("playing", 30, 100)
+    chk(ev("lantern_lit")[0]["data"] == {"lantern_id": "L1", "relight": False}, "lit data")
+    final("playing", 30, 140)  # v1.2: 8*5 + 100
     chk([l for l in snap(30)["lanterns"] if l["id"] == "L1"][0]["lit"] is True, "L1 lit")
 elif name == "s06_pulse_stun":
     chk(names() == [(1, "pulse")], "events %s" % names())
@@ -97,11 +99,16 @@ elif name == "s09_loss_no_flames":
     chk(ev("game_over")[0]["data"] == {"result": "lost", "reason": "no_flames"}, "go data")
     final("lost", 16, 0)
 elif name == "s10_win_all_lit":
-    chk(names() == [(1, "mote_picked"), (1, "deposit"), (1, "lantern_lit"), (1, "game_over")], "events %s" % names())
+    # v1.2: thap du 5/5 KHONG ket thuc Dem (khong con thang som)
+    chk(names() == [(1, "mote_picked"), (1, "deposit"), (1, "lantern_lit")], "events %s" % names())
     chk(ev("mote_picked")[0]["data"] == {"carried": 10}, "mote data")
     chk(ev("deposit")[0]["data"] == {"lantern_id": "L1", "amount": 10, "deposited": 10}, "deposit data")
-    chk(ev("game_over")[0]["data"] == {"result": "won", "reason": "all_lit"}, "go data")
-    final("won", 1, 458)
+    chk(ev("lantern_lit")[0]["data"] == {"lantern_id": "L1", "relight": False}, "lit data")
+    final("playing", 600, 150)
+    ls = {l["id"]: l for l in snap(600)["lanterns"]}
+    chk(all(l["lit"] for l in ls.values()), "5 den van sang")
+    chk(ls["L2"]["fuel"] == 90.0 and ls["L2"]["ever_lit"] is True, "L2 dat san hao 600 tick -> 90.0 %s" % ls["L2"])
+    chk(ls["L1"]["fuel"] == 90.0, "L1 thap tick 1, hao tu tick 2 -> 100 - 599/60 = 90.0 %s" % ls["L1"])
 elif name == "s11_loss_dawn_t60":
     chk(names() == [(60, "game_over")], "events %s" % names())
     chk(ev("game_over")[0]["data"] == {"result": "lost", "reason": "dawn"}, "go data")
@@ -133,8 +140,9 @@ elif name == "s16_nofl_beats_dawn":
     final("lost", 16, 0)
 elif name == "s17_win_beats_dawn":
     chk(names() == [(1, "deposit"), (1, "lantern_lit"), (1, "game_over")], "events %s" % names())
-    chk(ev("game_over")[0]["data"] == {"result": "won", "reason": "all_lit"}, "go data")
-    final("won", 1, 250)
+    chk(ev("game_over")[0]["data"] == {"result": "won", "reason": "dawn_survived"}, "go data")
+    # v1.2: 10*5 + 100 + 4*(50+floor(99.98)) + (50+100) + 3*50
+    final("won", 1, 1046)
 else:
     errs.append("unknown set " + name)
 
