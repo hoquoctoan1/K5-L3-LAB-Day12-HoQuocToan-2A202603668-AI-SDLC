@@ -1,0 +1,33 @@
+# A0-P3 - core tests sau khi doi so chuan v1.2 (2026-11-21, Windows, Godot 4.7.2)
+# Lenh: GODOT --headless --path godot --script res://tests/run_core_tests.gd ; exit=1
+# 10 fail du kien: test cu dung thoi gian Dem 300/330/360 s va thuong giay (luat bi THAY THE) - P3-B3/P3-B4 cap nhat
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ran test_charm
+ran test_config
+ran test_drifter
+ran test_input_decoder
+ran test_jump_pad
+FAIL [test_lifecycle_system] 18000 (got 14400, want 18000)
+FAIL [test_lifecycle_system] 19800 (got 16200, want 19800)
+FAIL [test_lifecycle_system] 21600 (got 18000, want 21600)
+FAIL [test_lifecycle_system] giay con lai (got 238, want 298)
+FAIL [test_lifecycle_system] bonus = floor(giay)*2 + 50*flames (got 100, want 696)
+FAIL [test_lifecycle_system] night3 tick 21599 playing (got lost, want playing)
+ran test_lifecycle_system
+ran test_maps
+ran test_mote_lantern
+ran test_player_system
+ran test_pulse_system
+ran test_shade_system
+FAIL [test_sim] game_over tick 19800 (got 16200, want 19800)
+ran test_sim
+ran test_ui_logic
+ran test_wind
+ran test_codec
+FAIL [test_e2e] time dung (got 239.833000, want 299.833333)
+e2e night3 21600 ticks in-process: 22583 ms
+FAIL [test_e2e] Dem 3 het gio o 21600 (got {"type":"end","ticks":18000,"state":"lost","score":0}, want {"type":"end","ticks":21600,"state":"lost","score":0})
+FAIL [test_e2e] dawn tick 21600
+ran test_e2e
+checks=3142 failures=10

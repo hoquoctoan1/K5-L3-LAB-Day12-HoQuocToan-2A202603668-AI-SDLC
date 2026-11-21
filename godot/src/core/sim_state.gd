@@ -1,6 +1,6 @@
 class_name SimState
 extends RefCounted
-## Trang thai mo phong v2 (contract v1.1). DONG BANG boi A0-P2: chi A0 sua file nay.
+## Trang thai mo phong v2 (contract v1.2). DONG BANG boi A0-P2, mo rong boi A0-P3: chi A0 sua file nay.
 ## Chi tiet + danh dau ASSUMPTION: godot/src/core/interfaces_v2.md.
 ## Truong "LEGACY" chi de he thong Phase 1 con chay; owner xoa khi viet lai (xem interfaces_v2.md).
 
@@ -13,7 +13,7 @@ var sim_ticks: int:               # alias cua steps
 var paused: bool = false
 var night: int = 1                # 1..3
 var status: String = "playing"    # playing | won | lost  (snapshot them "paused")
-var loss_reason: String = ""      # no_flames | dawn | ""
+var loss_reason: String = ""      # no_flames | dawn | "" (thang: dawn_survived, xem lifecycle)
 var time_left_initial: float = 300.0
 var score: int = 0
 
@@ -21,15 +21,19 @@ var score: int = 0
 ##  pos Vector3, vel Vector3, grounded bool, facing Vector2 (XZ, don vi; mac dinh +Z=(0,1)),
 ##  flames int, carried int, invuln_ticks int, dash_cd_ticks int, dash_ticks_left int,
 ##  dash_dir Vector2, pulse_cd_ticks int, charm_ticks int, fall_wait_ticks int (>0 = dang cho hoi sinh),
-##  launched bool (dang bay do bục nhảy: giu van toc toi khi cham dat)
+##  launched bool (dang bay do bục nhảy: giu van toc toi khi cham dat),
+##  successful_lights int (v1.2: so lan thap thanh cong trong Dem, ke ca thap lai; den dat san bang scenario KHONG tinh)
 ## LEGACY (Phase 1): vy, on_ground, invuln_left (s), pulse_cd_left (s)
 var player: Dictionary = {}
-## lanterns: [{id "L1".., pos Vector3, lit bool, deposited int, safe_timer int}]
+## lanterns: [{id "L1".., pos Vector3, lit bool, deposited int, safe_timer int,
+##   v1.2: fuel_units int (1 unit = 1/60 fuel; 0..GameConfig.FUEL_MAX_UNITS; den tat = 0),
+##         ever_lit bool (da tung sang), relit_count int (so lan thap lai)}]
 var lanterns: Array = []
 ## motes: [{id "m1".., pos Vector3, kind "random"|"dropped", ttl_ticks int (-1 = vo han), point_index int (-1 = khong co)}]
 var motes: Array = []
-## shades: [{id "S1".., pos Vector3, state "spawning|wander|chase|recoil|stunned", state_ticks_left int,
+## shades: [{id "S1".., pos Vector3, state "spawning|wander|chase|recoil|stunned|drain", state_ticks_left int,
 ##   knock_dir Vector2, knock_ticks_left int, recoil_dir Vector2, safe_push_ticks int,
+##   v1.2: target_lantern_id String ("" = khong co), drain_ticks int (so tick da hut lien tuc, cho fuel_drain moi 60 tick),
 ##   LEGACY stun_left float (s)}]
 var shades: Array = []
 ## drifters: [{id "D1".., pos Vector3, state "idle|chase|flee|removed", stolen int, has_stolen bool,
@@ -90,6 +94,36 @@ func height_at(x: float, z: float, from_y: float = 1.0e9) -> float:
 		return 0.0
 	return VOID_Y
 
+## --- helper v1.2 (nhien lieu, suc chua) ---
+## Suc chua hien tai = 10 + 2 * successful_lights, toi da 20.
+static func capacity_of(player_: Dictionary) -> int:
+	return mini(GameConfig.CAPACITY_MAX,
+		GameConfig.CARRY_CAPACITY + GameConfig.CAPACITY_PER_LIGHT * int(player_.get("successful_lights", 0)))
+
+func capacity() -> int:
+	return capacity_of(player)
+
+## Nhien lieu (don vi fuel, so thuc) cua den; den tat = 0.
+static func fuel_of(lantern: Dictionary) -> float:
+	if not lantern.get("lit", false):
+		return 0.0
+	return float(int(lantern.get("fuel_units", 0))) / float(GameConfig.FUEL_UNITS_PER_FUEL)
+
+## Den sang va fuel < 30 (mat vung an toan, Bong Muc wander nham toi). Dung 30 KHONG yeu.
+static func is_low_fuel(lantern: Dictionary) -> bool:
+	return lantern.get("lit", false) and int(lantern.get("fuel_units", 0)) < GameConfig.LOW_FUEL_UNITS
+
+## Den co vung an toan: dang sang va fuel >= 30.
+static func has_safe_zone(lantern: Dictionary) -> bool:
+	return lantern.get("lit", false) and int(lantern.get("fuel_units", 0)) >= GameConfig.LOW_FUEL_UNITS
+
+## Xuat fuel 1 chu so thap phan [GIA DINH Q6]: round_half_up(units / 6) / 10, bang so nguyen. Den tat = 0.0.
+static func fuel_out(lantern: Dictionary) -> float:
+	if not lantern.get("lit", false):
+		return 0.0
+	var tenths: int = int((int(lantern.get("fuel_units", 0)) * 10 + 30) / 60)
+	return float(tenths) / 10.0
+
 static func make_default_wind() -> Dictionary:
 	return {"active": false, "dir_deg": 0.0, "ticks_left": 0,
 		"next_ticks": GameConfig.WIND_EVERY_TICKS, "warn_ticks": 0}
@@ -100,6 +134,7 @@ static func make_default_player() -> Dictionary:
 		"facing": Vector2(0.0, 1.0), "flames": GameConfig.FLAMES, "carried": 0,
 		"invuln_ticks": 0, "dash_cd_ticks": 0, "dash_ticks_left": 0, "dash_dir": Vector2(0.0, 1.0),
 		"pulse_cd_ticks": 0, "charm_ticks": 0, "fall_wait_ticks": 0, "launched": false,
+		"successful_lights": 0,
 		# LEGACY Phase 1
 		"vy": 0.0, "on_ground": true, "invuln_left": 0.0, "pulse_cd_left": 0.0,
 	}
@@ -110,7 +145,7 @@ static func make_mote(id: String, pos: Vector3, kind: String = "random", ttl_tic
 static func make_shade(id: String, pos: Vector3, state: String = "chase") -> Dictionary:
 	return {"id": id, "pos": pos, "state": state, "state_ticks_left": 0,
 		"knock_dir": Vector2.ZERO, "knock_ticks_left": 0, "recoil_dir": Vector2.ZERO,
-		"safe_push_ticks": 0, "stun_left": 0.0}
+		"safe_push_ticks": 0, "target_lantern_id": "", "drain_ticks": 0, "stun_left": 0.0}
 
 static func make_drifter(id: String, pos: Vector3, state: String = "idle") -> Dictionary:
 	return {"id": id, "pos": pos, "state": state, "stolen": 0, "has_stolen": false,
@@ -120,4 +155,5 @@ static func make_charm(id: String, pos: Vector3) -> Dictionary:
 	return {"id": id, "pos": pos, "available": true, "respawn_ticks": 0}
 
 static func make_lantern(id: String, pos: Vector3) -> Dictionary:
-	return {"id": id, "pos": pos, "lit": false, "deposited": 0, "safe_timer": 0}
+	return {"id": id, "pos": pos, "lit": false, "deposited": 0, "safe_timer": 0,
+		"fuel_units": 0, "ever_lit": false, "relit_count": 0}

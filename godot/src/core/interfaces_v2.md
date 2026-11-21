@@ -76,3 +76,19 @@ Mot `Rng` (mulberry32) seed tu `--seed`. `state.seed_streams(seed)` tao `state.r
 - Dem 2/3: 2 Bong Muc tai tick 300 roi theo interval rieng (480/420/360), `max_alive` chung ca ban do, luan phien dao (Dem 2), >=15 m tu nguoi choi moi Dem.
 - `fall_enabled` = true trong contract v1.1 **[ASSUMPTION]** (Phase 1: false).
 - Thang/thua sau moi tick: no_flames > all_lit (ke ca dung tick het gio) > dawn.
+
+## 11. Contract v1.2 (A0-P3, TICKET-03 "Den can dau") - DONG BANG boi A0-P3
+Nguon: `docs/notes/ticket-03.md`, ke hoach `docs/TASKS_P3.md` (Q1 = A da duoc Product Owner chot; Q2-Q9 theo de xuat).
+**SimState them** (xem `sim_state.gd`):
+- lantern: `fuel_units:int` (1 unit = 1/60 fuel; day = `FUEL_MAX_UNITS` 6000; den tat = 0), `ever_lit:bool`, `relit_count:int`.
+- player: `successful_lights:int` (thap moi + thap lai trong Dem; den dat san bang scenario KHONG tinh; ve 0 dau Dem).
+- shade: state them `drain`; `target_lantern_id:String` ("" = khong co), `drain_ticks:int` (dem tick hut lien tuc).
+- helper: `SimState.capacity_of(player)` / `state.capacity()` = min(20, 10 + 2*successful_lights); `fuel_of(l)`, `is_low_fuel(l)` (sang va < 1800 units), `has_safe_zone(l)` (sang va >= 1800 units), `fuel_out(l)` (1 chu so thap phan, round half up, so nguyen).
+**GameConfig them**: `FUEL_*`, `RELIGHT_COST`, `WIN_RATIO`, `DRAIN_*`, `LOW_FUEL_*`, `CAPACITY_MAX`, `CAPACITY_PER_LIGHT`, `FUEL_DRAIN_EVENT_EVERY_TICKS`, `win_threshold(n)` = ceil(0.6n); diem `SCORE_PER_MOTE` 5 (khi NAP), `SCORE_PER_RELIGHT` 40, `SCORE_PER_STUN_DRAIN` 15, `SCORE_PER_LIT_LANTERN_DAWN` 50; `SCORE_PER_SECOND_LEFT` = 0 (LEGACY, P3-B3 xoa). Dem 240/270/300 s.
+**Thu tu tick v1.2** (bo sung muc 8):
+- Buoc 2b (ngay sau buoc 2, `sim.gd` goi `LanternSystem.tick_fuel(state, events)` - P3-B1 viet, P3-B3 noi): moi den sang tru `FUEL_DECAY_UNITS_PER_TICK` + `FUEL_DRAIN_UNITS_PER_TICK` x (so shade state `drain` co `target_lantern_id` = den do); `fuel_drain{lantern_id,shade_id,fuel}` khi `drain_ticks % 60 == 0` (ShadeSystem tang `drain_ticks` o buoc 8, LanternSystem doc o buoc 2b cua tick sau) **[GIA DINH Q2]**; den `fuel_units <= 0` -> `lit=false, deposited=0, fuel_units=0`, event `lantern_out{lantern_id}`.
+- Buoc 5: chon den "nhan duoc" (chua sang, hoac sang va `fuel_units < FUEL_MAX_UNITS`); thap moi `deposit` + `lantern_lit{lantern_id,relight:false}`; thap lai (ever_lit, can `RELIGHT_COST`) `deposit` + `lantern_lit{...,relight:true}`; cham dau `refuel{lantern_id,amount,fuel}` (khong phat `deposit`) **[GIA DINH Q3]**.
+- Buoc 6/8: vung an toan chi tinh den `has_safe_zone`. Shade wander: nham den `is_low_fuel` gan nhat (hoa id nho), khong co thi den TAT gan nhat (Q1 = A), khong co nua thi di ngau nhien nhu v1.1. `drain` khi XZ <= `DRAIN_RANGE_M`.
+- Buoc 11: `no_flames` > (het gio: lit >= `win_threshold` -> `won/dawn_survived`, else `lost/dawn`). Bo `all_lit`.
+**Snapshot v1.2**: lantern `{id,pos,lit,deposited,fuel,ever_lit,relit_count}` (`fuel` 1 chu so thap phan); player them `capacity` (sau `carried`) **[GIA DINH thu tu khoa]**.
+**Scenario v1.2**: lantern `lit, fuel (0..100), ever_lit` (`lit:true` thieu `fuel` -> 100; thieu `ever_lit` -> = `lit` **[GIA DINH Q5]**); player `successful_lights:int>=0`; shades[] `target_lantern_id`; state `drain` hop le.

@@ -1,11 +1,11 @@
 class_name GameConfig
 extends RefCounted
-## Nguon su that duy nhat cho tuning (Phase 2, contract v1.1, so chuan TICKET-02).
+## Nguon su that duy nhat cho tuning (Phase 3, contract v1.2, so chuan TICKET-03 tren nen TICKET-02).
 ## Phai khop game.contract.json (co test_config). Giu ten hang cu cua Phase 1 (alias).
 
 const DT: float = 1.0 / 60.0
 const TICK_RATE: int = 60
-const CONTRACT_VERSION: String = "1.1"
+const CONTRACT_VERSION: String = "1.2"
 
 # --- tuning cong khai trong contract ---
 const PLAYER_SPEED: float = 6.0
@@ -24,9 +24,9 @@ const PULSE_STUN_TICKS: int = 120
 const PULSE_STUN_S: float = 2.0
 const PULSE_KNOCK_TICKS: int = 15
 const PULSE_PUSH_M: float = 4.0           # tong 4 m trong PULSE_KNOCK_TICKS tick
-const NIGHT1_DURATION_S: float = 300.0
-const NIGHT2_DURATION_S: float = 330.0
-const NIGHT3_DURATION_S: float = 360.0
+const NIGHT1_DURATION_S: float = 240.0      # v1.2 (TICKET-03 muc 3): 300 -> 240
+const NIGHT2_DURATION_S: float = 270.0      # v1.2: 330 -> 270
+const NIGHT3_DURATION_S: float = 300.0      # v1.2: 360 -> 300
 const FLAMES: int = 3
 const INVULN_TICKS: int = 90
 const INVULN_S: float = 1.5
@@ -55,11 +55,36 @@ const DASH_DURATION_S: float = 0.2
 const DASH_COOLDOWN_TICKS: int = 90
 const DASH_COOLDOWN_S: float = 1.5
 
-const SCORE_PER_MOTE: int = 10            # P6: cong khi NAP vao den (delivered), khong phai khi nhat
-const SCORE_PER_LANTERN: int = 100
-const SCORE_PER_STUN: int = 5
-const SCORE_PER_SECOND_LEFT: int = 2
-const SCORE_PER_FLAME_LEFT: int = 50
+# --- nhien lieu den (v1.2, TICKET-03 muc 1-2) ---
+# Don vi nguyen: 1 "fuel unit" = 1/60 fuel. Moi tinh toan dau dung so nguyen; chi lam tron khi xuat.
+const FUEL_MAX: float = 100.0
+const FUEL_DECAY_PER_S: float = 1.0
+const FUEL_PER_MOTE: int = 10
+const RELIGHT_COST: int = 5               # den ever_lit thap lai can 5 mote; den chua tung sang van LANTERN_COST
+const WIN_RATIO: float = 0.6
+const DRAIN_PER_S: float = 5.0            # moi Bong Muc dang drain; nhieu con cong don
+const LOW_FUEL_THRESHOLD: float = 30.0    # fuel < 30: mat vung an toan, nhap nhay; dung 30 van con vung
+const CAPACITY_MAX: int = 20
+const CAPACITY_PER_LIGHT: int = 2         # suc chua = CARRY_CAPACITY + 2*successful_lights, toi da CAPACITY_MAX
+const FUEL_UNITS_PER_FUEL: int = 60
+const FUEL_MAX_UNITS: int = 6000                  # FUEL_MAX * 60
+const FUEL_DECAY_UNITS_PER_TICK: int = 1          # 1.0/s = 1/60 fuel moi tick
+const FUEL_DRAIN_UNITS_PER_TICK: int = 5          # 5/s = 5/60 fuel moi tick, moi con
+const FUEL_UNITS_PER_MOTE: int = 600              # 10 fuel
+const LOW_FUEL_UNITS: int = 1800                  # 30 fuel
+const DRAIN_RANGE_M: float = 2.0          # XZ <= 2 m toi den muc tieu -> drain
+const DRAIN_CHASE_M: float = 6.0          # dang drain, May vao trong 6 m -> chase
+const FUEL_DRAIN_EVENT_EVERY_TICKS: int = 60   # [GIA DINH Q2] dem theo tung con tu luc vao drain
+
+# --- diem (v1.2, TICKET-03 muc 5: THAY THE toan bo cong thuc cu) ---
+const SCORE_PER_MOTE: int = 5             # moi mote NAP vao den (thap moi, thap lai, cham dau); KHONG cong khi nhat
+const SCORE_PER_LANTERN: int = 100        # thap lan dau
+const SCORE_PER_RELIGHT: int = 40         # thap lai
+const SCORE_PER_STUN: int = 5             # moi Bong Muc trung Toa Sang
+const SCORE_PER_STUN_DRAIN: int = 15      # tong diem neu con do dang drain ngay truoc khi trung
+const SCORE_PER_LIT_LANTERN_DAWN: int = 50   # chi khi thang: moi den dang sang +50 + floor(fuel)
+const SCORE_PER_FLAME_LEFT: int = 50      # chi khi thang
+const SCORE_PER_SECOND_LEFT: int = 0      # LEGACY: thuong thoi gian da BO o v1.2; lifecycle (P3-B3) xoa cho dung
 
 # --- hang so noi bo (khong thuoc contract) ---
 const ISLAND_RADIUS_NIGHT1: float = 40.0
@@ -107,7 +132,7 @@ static func night_duration_s(night: int) -> float:
 	return NIGHT1_DURATION_S
 
 static func night_duration_ticks(night: int) -> int:
-	return int(round(night_duration_s(night) * float(TICK_RATE)))   # 18000/19800/21600
+	return int(round(night_duration_s(night) * float(TICK_RATE)))   # v1.2: 14400/16200/18000
 
 static func shade_speed(night: int) -> float:
 	match night:
@@ -139,13 +164,18 @@ static func shade_spawn_interval_ticks(night: int) -> int:
 		3: return 360
 	return 480
 
+## So den dang sang toi thieu de thang luc binh minh: ceil(WIN_RATIO * tong den), tinh bang so nguyen
+## (0.6 = 3/5): Dem 1 -> 3/5, Dem 2 -> 4/6, Dem 3 -> 5/7.
+static func win_threshold(lantern_total: int) -> int:
+	return int((3 * lantern_total + 4) / 5)
+
 static func has_drifters(night: int) -> bool:
 	return night >= 2
 
 static func has_wind(night: int) -> bool:
 	return night == 3
 
-## Dung de test doi chieu voi game.contract.json (contract v1.1)
+## Dung de test doi chieu voi game.contract.json (contract v1.2)
 static func tuning_dict() -> Dictionary:
 	return {
 		"player_speed": PLAYER_SPEED, "carry_capacity": CARRY_CAPACITY,
@@ -161,9 +191,14 @@ static func tuning_dict() -> Dictionary:
 		"dash_speed": DASH_SPEED, "dash_duration_s": DASH_DURATION_S,
 		"dash_cooldown_s": DASH_COOLDOWN_S,
 		"night2_duration_s": NIGHT2_DURATION_S, "night3_duration_s": NIGHT3_DURATION_S,
+		"fuel_max": FUEL_MAX, "fuel_decay_per_s": FUEL_DECAY_PER_S, "fuel_per_mote": FUEL_PER_MOTE,
+		"relight_cost": RELIGHT_COST, "win_ratio": WIN_RATIO, "drain_per_s": DRAIN_PER_S,
+		"low_fuel_threshold": LOW_FUEL_THRESHOLD, "capacity_max": CAPACITY_MAX,
+		# [GIA DINH] ten khoa score v1.2: ticket khong liet ke; per_second_left bi bo theo ticket muc 5
 		"score": {
 			"per_mote": SCORE_PER_MOTE, "per_lantern": SCORE_PER_LANTERN,
-			"per_stun": SCORE_PER_STUN, "per_second_left": SCORE_PER_SECOND_LEFT,
+			"per_relight": SCORE_PER_RELIGHT, "per_stun": SCORE_PER_STUN,
+			"per_stun_drain": SCORE_PER_STUN_DRAIN, "per_lit_lantern_dawn": SCORE_PER_LIT_LANTERN_DAWN,
 			"per_flame_left": SCORE_PER_FLAME_LEFT,
 		},
 	}
